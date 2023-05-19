@@ -7,6 +7,11 @@
 /** Give incoming abilities to owner */
 void UBlasterAbilitySystemComponent::GiveAbilities(const TArray<TSubclassOf<UGameplayAbility>>& InAbilities)
 {
+	if (!IsOwnerActorAuthoritative())
+	{
+		return;	
+	}
+	
 	for (const TSubclassOf<UGameplayAbility> Ability : InAbilities)
 	{
 		GiveAbility(FGameplayAbilitySpec(Ability, 1.f, INDEX_NONE, nullptr));
@@ -20,6 +25,11 @@ void UBlasterAbilitySystemComponent::GiveAbilities(const TArray<TSubclassOf<UGam
 /** Apply incoming effects to owner */
 void UBlasterAbilitySystemComponent::ApplyEffects(const TArray<TSubclassOf<UGameplayEffect>>& InEffects)
 {
+	if (!IsOwnerActorAuthoritative())
+	{
+		return;	
+	}
+	
 	FGameplayEffectContextHandle EffectContext = MakeEffectContext();
 	EffectContext.AddSourceObject(GetOwner());
 		

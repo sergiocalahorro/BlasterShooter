@@ -142,7 +142,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Jumping
 		if (InputAction_Jump)
 		{
-			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Triggered, this, &ABlasterCharacter::StartJump);
+			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Started, this, &ABlasterCharacter::StartJump);
 			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Completed, this, &ABlasterCharacter::StopJump);
 		}
 	}
@@ -178,23 +178,23 @@ void ABlasterCharacter::Look(const FInputActionValue& Value)
 	}
 
 	// Get Vector2D value from input action
-	const FVector2D LookAxisVector = Value.Get<FVector2D>();
+	const FVector2D LookValue = Value.Get<FVector2D>();
 
 	// Add yaw and pitch input to controller
-	AddControllerYawInput(LookAxisVector.X);
-	AddControllerPitchInput(LookAxisVector.Y);
+	AddControllerYawInput(LookValue.X);
+	AddControllerPitchInput(LookValue.Y);
 }
 
 /** Called when jump is started */
 void ABlasterCharacter::StartJump(const FInputActionValue& Value)
 {
-	Jump();
+	AbilitySystemComponent->TryActivateAbilitiesByTag(JumpTags);
 }
 
 /** Called when jump is stopped */
 void ABlasterCharacter::StopJump(const FInputActionValue& Value)
 {
-	StopJumping();
+	AbilitySystemComponent->CancelAbilities(&JumpTags);
 }
 
 #pragma endregion INPUT
@@ -220,22 +220,12 @@ UAbilitySystemComponent* ABlasterCharacter::GetAbilitySystemComponent() const
 /** Give abilities */
 void ABlasterCharacter::GiveAbilities() const
 {
-	if (!HasAuthority())
-	{
-		return;	
-	}
-
 	AbilitySystemComponent->GiveAbilities(CharacterData.Abilities);
 }
 
 /** Apply gameplay effects at startup */
 void ABlasterCharacter::ApplyStartupEffects() const
 {
-	if (!HasAuthority())
-	{
-		return;
-	}
-	
 	AbilitySystemComponent->ApplyEffects(CharacterData.Effects);
 }
 

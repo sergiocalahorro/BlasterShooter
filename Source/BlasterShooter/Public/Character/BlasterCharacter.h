@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "AbilitySystemInterface.h"
+#include "GameplayTagContainer.h"
 #include "General/Structs/Data/CharacterData.h"
 
 #include "BlasterCharacter.generated.h"
@@ -182,6 +183,14 @@ private:
 	/** Attributes */
 	UPROPERTY(VisibleDefaultsOnly, Category = "AA|GAS")
 	TObjectPtr<UBlasterAttributeSet> AttributeSet;
+
+#pragma region GAS_TAGS
+
+	/** Jump tags */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|GAS|Tags")
+	FGameplayTagContainer JumpTags;
+	
+#pragma endregion GAS_TAGS
 
 #pragma endregion GAS
 	
