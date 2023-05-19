@@ -8,21 +8,25 @@
 #include "InputActionValue.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
+
+// BlasterShooter
 #include "General/Structs/Data/CharacterData.h"
 
 #include "BlasterCharacter.generated.h"
 
-class UDataAsset_CharacterData;
 // Forward declarations - Unreal Engine
 class UInputComponent;
 class UCameraComponent;
 class USpringArmComponent;
 class UInputMappingContext;
 class UInputAction;
+class UWidgetComponent;
 
 // Forward declarations - BlasterShooter
 class UBlasterAttributeSet;
 class UBlasterAbilitySystemComponent;
+class UDataAsset_CharacterData;
+class UOverheadWidget;
 
 UCLASS()
 class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface
@@ -92,6 +96,14 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "AA|Camera")
 	TObjectPtr<UCameraComponent> FollowCamera;
 
+	/** Overhead widget */
+	UPROPERTY(EditAnywhere, Category = "AA|HUD")
+	TObjectPtr<UWidgetComponent> OverheadWidget;
+
+	/** Overhead widget reference */
+	UPROPERTY()
+	TObjectPtr<UOverheadWidget> OverheadWidgetRef;
+
 #pragma endregion COMPONENTS
 
 #pragma region INPUT
@@ -142,6 +154,12 @@ public:
 	/** Setter of CharacterData */
 	UFUNCTION()
 	void SetCharacterData(const FCharacterData& InCharacterData);
+
+private:
+
+	/** Initialize character */
+	UFUNCTION()
+	void InitializeCharacter();
 
 protected:
 

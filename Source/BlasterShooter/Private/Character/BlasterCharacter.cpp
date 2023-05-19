@@ -9,11 +9,14 @@
 #include "InputMappingContext.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // BlasterShooter
+#include "Components/WidgetComponent.h"
 #include "General/DataAssets/DataAsset_CharacterData.h"
 #include "GAS/AbilitySystem/BlasterAbilitySystemComponent.h"
 #include "GAS/Attributes/BlasterAttributeSet.h"
+#include "UI/HUD/OverheadWidget.h"
 
 #pragma region INITIALIZATION
 
@@ -33,6 +36,14 @@ ABlasterCharacter::ABlasterCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget->SetupAttachment(RootComponent);
+
+	// Configure movement
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+	
 	// GAS setup
 	AbilitySystemComponent = CreateDefaultSubobject<UBlasterAbilitySystemComponent>(TEXT("AbilitySystem"));
 	AbilitySystemComponent->SetIsReplicated(true);
@@ -67,6 +78,8 @@ void ABlasterCharacter::PostLoad()
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	InitializeCharacter();
 }
 
 /** Called when this Pawn is possessed (only called on the server) */
@@ -205,6 +218,13 @@ void ABlasterCharacter::StopJump(const FInputActionValue& Value)
 void ABlasterCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 {
 	CharacterData = InCharacterData;
+}
+
+/** Initialize character */
+void ABlasterCharacter::InitializeCharacter()
+{
+	OverheadWidgetRef = CastChecked<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+	OverheadWidgetRef->ShowPlayerNetRole(this);
 }
 
 #pragma endregion CORE

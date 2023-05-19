@@ -16,7 +16,10 @@ public class BlasterShooter : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"OnlineSubsystem",
-			"OnlineSubsystemSteam"
+			"OnlineSubsystemSteam",
+			"UMG",
+			"Slate",
+			"SlateCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
