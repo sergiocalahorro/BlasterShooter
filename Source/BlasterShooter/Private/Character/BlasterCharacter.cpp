@@ -10,13 +10,16 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // BlasterShooter
 #include "Components/WidgetComponent.h"
 #include "General/DataAssets/DataAsset_CharacterData.h"
 #include "GAS/AbilitySystem/BlasterAbilitySystemComponent.h"
 #include "GAS/Attributes/BlasterAttributeSet.h"
+#include "General/Components/CombatComponent.h"
 #include "UI/HUD/OverheadWidget.h"
+#include "Weapon/WeaponActor.h"
 
 #pragma region INITIALIZATION
 
@@ -39,6 +42,9 @@ ABlasterCharacter::ABlasterCharacter()
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	CombatComponent->SetIsReplicated(true);
+
 	// Configure movement
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -60,6 +66,8 @@ ABlasterCharacter::ABlasterCharacter()
 void ABlasterCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	CombatComponent->SetBlasterCharacter(this);
 }
 
 /** Do any object-specific cleanup required immediately after loading an object. */
@@ -80,6 +88,12 @@ void ABlasterCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeCharacter();
+}
+
+/** Called every frame */
+void ABlasterCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
 }
 
 /** Called when this Pawn is possessed (only called on the server) */
@@ -104,6 +118,8 @@ void ABlasterCharacter::OnRep_PlayerState()
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ABlasterCharacter, OverlappingWeapon, COND_OwnerOnly);
 }
 
 /** Tell client that the Pawn is begin restarted */
@@ -143,26 +159,32 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Moving
 		if (InputAction_Move)
 		{
-			EnhancedInputComponent->BindAction(InputAction_Move, ETriggerEvent::Triggered, this, &ABlasterCharacter::Move);
+			EnhancedInputComponent->BindAction(InputAction_Move, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Move_Triggered);
 		}
 
 		// Looking
 		if (InputAction_Look)
 		{
-			EnhancedInputComponent->BindAction(InputAction_Look, ETriggerEvent::Triggered, this, &ABlasterCharacter::Look);
+			EnhancedInputComponent->BindAction(InputAction_Look, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Look_Triggered);
 		}
 		
 		// Jumping
 		if (InputAction_Jump)
 		{
-			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Started, this, &ABlasterCharacter::StartJump);
-			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Completed, this, &ABlasterCharacter::StopJump);
+			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Started, this, &ABlasterCharacter::InputAction_Jump_Started);
+			EnhancedInputComponent->BindAction(InputAction_Jump, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Jump_Completed);
+		}
+
+		// Equipping weapon
+		if (InputAction_Equip)
+		{
+			EnhancedInputComponent->BindAction(InputAction_Equip, ETriggerEvent::Started, this, &ABlasterCharacter::InputAction_Equip_Started);
 		}
 	}
 }
 
-/** Called for movement input */
-void ABlasterCharacter::Move(const FInputActionValue& Value)
+/** Called when movement input is triggered  */
+void ABlasterCharacter::InputAction_Move_Triggered(const FInputActionValue& Value)
 {
 	if (!Controller)
 	{
@@ -182,8 +204,8 @@ void ABlasterCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(RightDirection, MovementValue.X);
 }
 
-/** Called for looking input */
-void ABlasterCharacter::Look(const FInputActionValue& Value)
+/** Called when looking input is triggered */
+void ABlasterCharacter::InputAction_Look_Triggered(const FInputActionValue& Value)
 {
 	if (!Controller)
 	{
@@ -198,16 +220,35 @@ void ABlasterCharacter::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(LookValue.Y);
 }
 
-/** Called when jump is started */
-void ABlasterCharacter::StartJump(const FInputActionValue& Value)
+/** Called when jump input is started */
+void ABlasterCharacter::InputAction_Jump_Started(const FInputActionValue& Value)
 {
 	AbilitySystemComponent->TryActivateAbilitiesByTag(JumpTags);
 }
 
-/** Called when jump is stopped */
-void ABlasterCharacter::StopJump(const FInputActionValue& Value)
+/** Called when jump input is completed */
+void ABlasterCharacter::InputAction_Jump_Completed(const FInputActionValue& Value)
 {
 	AbilitySystemComponent->CancelAbilities(&JumpTags);
+}
+
+/** Called when equip input is started */
+void ABlasterCharacter::InputAction_Equip_Started(const FInputActionValue& Value)
+{
+	if (HasAuthority())
+	{
+		CombatComponent->EquipWeapon(OverlappingWeapon);
+	}
+	else
+	{
+		ServerInputAction_Equip_Started();
+	}
+}
+
+/** RPC sent when equip input is started (client sends petition to server for equipping weapon) */
+void ABlasterCharacter::ServerInputAction_Equip_Started_Implementation()
+{
+	CombatComponent->EquipWeapon(OverlappingWeapon);
 }
 
 #pragma endregion INPUT
@@ -224,10 +265,54 @@ void ABlasterCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 void ABlasterCharacter::InitializeCharacter()
 {
 	OverheadWidgetRef = CastChecked<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
-	OverheadWidgetRef->ShowPlayerNetRole(this);
+	// OverheadWidgetRef->ShowPlayerNetRole(this);
 }
 
 #pragma endregion CORE
+
+#pragma region WEAPON
+
+/** Setter of OverlappingWeapon */
+void ABlasterCharacter::SetOverlappingWeapon(AWeaponActor* InOverlappingWeapon)
+{
+	// Hide last overlapping weapon
+	if (OverlappingWeapon)
+	{
+		OverlappingWeapon->TogglePickupWidget(false);
+	}
+
+	// Show new overlapping weapon
+	OverlappingWeapon = InOverlappingWeapon;
+	if (IsLocallyControlled())
+	{
+		if (OverlappingWeapon)
+		{
+			OverlappingWeapon->TogglePickupWidget(true);
+		}
+	}
+}
+
+/** RepNotify for OverlappingWeapon */
+void ABlasterCharacter::OnRep_OverlappingWeapon(AWeaponActor* OldOverlappingWeapon)
+{
+	if (OverlappingWeapon)
+	{
+		OverlappingWeapon->TogglePickupWidget(true);
+	}
+
+	if (OldOverlappingWeapon)
+	{
+		OldOverlappingWeapon->TogglePickupWidget(false);
+	}
+}
+
+/** Returns whether character has a weapon equipped */
+bool ABlasterCharacter::IsWeaponEquipped() const
+{
+	return CombatComponent->IsWeaponEquipped();
+}
+
+#pragma endregion WEAPON
 
 #pragma region GAS
 

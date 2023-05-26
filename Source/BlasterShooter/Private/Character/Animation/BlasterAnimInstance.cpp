@@ -43,6 +43,9 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	// Set whether character accelerating
 	bIsAccelerating = BlasterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
+
+	// Set whether character has a weapon equipped
+	bIsWeaponEquipped = BlasterCharacter->IsWeaponEquipped();
 }
 
 #pragma endregion OVERRIDES

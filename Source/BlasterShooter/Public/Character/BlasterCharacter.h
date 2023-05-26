@@ -27,6 +27,8 @@ class UBlasterAttributeSet;
 class UBlasterAbilitySystemComponent;
 class UDataAsset_CharacterData;
 class UOverheadWidget;
+class UCombatComponent;
+class AWeaponActor;
 
 UCLASS()
 class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface
@@ -45,6 +47,9 @@ public:
 #pragma region OVERRIDES
 
 public:
+
+	/** Called every frame */
+	virtual void Tick(float DeltaSeconds) override;
 	
 	/** Called upon landing when falling, to perform actions based on the Hit result */
 	virtual void Landed(const FHitResult& Hit) override;
@@ -96,6 +101,10 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "AA|Camera")
 	TObjectPtr<UCameraComponent> FollowCamera;
 
+	/** Component that will handle all combat-related functionality */
+	UPROPERTY(VisibleDefaultsOnly, Category = "AA|Combat")
+	TObjectPtr<UCombatComponent> CombatComponent;
+
 	/** Overhead widget */
 	UPROPERTY(EditAnywhere, Category = "AA|HUD")
 	TObjectPtr<UWidgetComponent> OverheadWidget;
@@ -115,17 +124,24 @@ public:
 
 private:
 
-	/** Called for movement input */
-	void Move(const FInputActionValue& Value);
+	/** Called when movement input is triggered  */
+	void InputAction_Move_Triggered(const FInputActionValue& Value);
 
-	/** Called for looking input */
-	void Look(const FInputActionValue& Value);
+	/** Called when looking input is triggered */
+	void InputAction_Look_Triggered(const FInputActionValue& Value);
 
-	/** Called when jump is started */
-	void StartJump(const FInputActionValue& Value);
+	/** Called when jump input is started */
+	void InputAction_Jump_Started(const FInputActionValue& Value);
 
-	/** Called when jump is stopped */
-	void StopJump(const FInputActionValue& Value);
+	/** Called when jump input is completed */
+	void InputAction_Jump_Completed(const FInputActionValue& Value);
+
+	/** Called when equip input is started */
+	void InputAction_Equip_Started(const FInputActionValue& Value);
+
+	/** RPC sent when equip input is started (client sends petition to server for equipping weapon) */
+	UFUNCTION(Server, Reliable)
+	void ServerInputAction_Equip_Started();
 
 private:
 
@@ -144,6 +160,10 @@ private:
 	/** InputAction for jumping input */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
 	TObjectPtr<UInputAction> InputAction_Jump;
+
+	/** InputAction for equipping input */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
+	TObjectPtr<UInputAction> InputAction_Equip;
 
 #pragma endregion INPUT
 
@@ -174,6 +194,32 @@ private:
 	FCharacterData CharacterData;
 
 #pragma endregion CORE
+
+#pragma region WEAPON
+
+public:
+
+	/** Setter of OverlappingWeapon */
+	UFUNCTION()
+	void SetOverlappingWeapon(AWeaponActor* InOverlappingWeapon);
+	
+	/** Returns whether character has a weapon equipped */
+	UFUNCTION()
+	bool IsWeaponEquipped() const;
+
+private:
+
+	/** RepNotify for OverlappingWeapon */
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AWeaponActor* OldOverlappingWeapon);
+
+private:
+
+	/** Overlapped weapon */
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+	TObjectPtr<AWeaponActor> OverlappingWeapon;
+
+#pragma endregion WEAPON
 
 #pragma region GAS
 

@@ -49,7 +49,11 @@ private:
 
 	/** Whether character's accelerating */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
-	bool bIsAccelerating; 
+	bool bIsAccelerating;
+
+	/** Whether character has an equipped weapon */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	bool bIsWeaponEquipped; 
 
 #pragma endregion CHARACTER
 	
