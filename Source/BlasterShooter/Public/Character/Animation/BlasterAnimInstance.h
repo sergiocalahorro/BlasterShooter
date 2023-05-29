@@ -53,7 +53,11 @@ private:
 
 	/** Whether character has an equipped weapon */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
-	bool bIsWeaponEquipped; 
+	bool bIsWeaponEquipped;
+
+	/** Whether character is crouching */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	bool bIsCrouched; 
 
 #pragma endregion CHARACTER
 	

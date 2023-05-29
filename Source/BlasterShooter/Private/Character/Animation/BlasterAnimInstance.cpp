@@ -46,6 +46,9 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	// Set whether character has a weapon equipped
 	bIsWeaponEquipped = BlasterCharacter->IsWeaponEquipped();
+
+	// Set whether character is crouching
+	bIsCrouched = BlasterCharacter->bIsCrouched;
 }
 
 #pragma endregion OVERRIDES

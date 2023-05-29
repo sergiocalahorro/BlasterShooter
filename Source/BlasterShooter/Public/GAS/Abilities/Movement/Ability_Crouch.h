@@ -8,16 +8,13 @@
 // BlasterShooter
 #include "GAS/Abilities/BaseAbility.h"
 
-#include "Ability_Jump.generated.h"
-
-// Forward declarations - Unreal Engine
-class UAbilityTask_WaitInputRelease;
+#include "Ability_Crouch.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UAbility_Jump : public UBaseAbility
+class BLASTERSHOOTER_API UAbility_Crouch : public UBaseAbility
 {
 	GENERATED_BODY()
 
@@ -35,25 +32,5 @@ protected:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 #pragma endregion OVERRIDES
-	
-#pragma region JUMP
-
-private:
-
-	/** Function bound to async task's input released delegate */
-	UFUNCTION()
-	void OnJumpInputReleased(float TimeHeld);
-
-	/** Function bound to character's on landed delegate */
-	UFUNCTION()
-	void OnLanded(const FHitResult& Hit);
-
-private:
-
-	/** Async task to wait for input release */
-	UPROPERTY()
-	TObjectPtr<UAbilityTask_WaitInputRelease> TaskWaitInputRelease;
-
-#pragma endregion JUMP
 	
 };

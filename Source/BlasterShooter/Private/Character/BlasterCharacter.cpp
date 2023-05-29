@@ -49,6 +49,7 @@ ABlasterCharacter::ABlasterCharacter()
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	
 	// GAS setup
 	AbilitySystemComponent = CreateDefaultSubobject<UBlasterAbilitySystemComponent>(TEXT("AbilitySystem"));
@@ -68,6 +69,12 @@ void ABlasterCharacter::PostInitializeComponents()
 	Super::PostInitializeComponents();
 
 	CombatComponent->SetBlasterCharacter(this);
+
+	// Bind attributes' value change delegates
+	if (AbilitySystemComponent && AttributeSet)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMaxMovementSpeedAttribute()).AddUObject(this, &ABlasterCharacter::OnMaxMovementSpeedChanged);
+	}
 }
 
 /** Do any object-specific cleanup required immediately after loading an object. */
@@ -180,6 +187,20 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		{
 			EnhancedInputComponent->BindAction(InputAction_Equip, ETriggerEvent::Started, this, &ABlasterCharacter::InputAction_Equip_Started);
 		}
+
+		// Jumping
+		if (InputAction_Crouch)
+		{
+			EnhancedInputComponent->BindAction(InputAction_Crouch, ETriggerEvent::Started, this, &ABlasterCharacter::InputAction_Crouch_Started);
+			EnhancedInputComponent->BindAction(InputAction_Crouch, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Crouch_Completed);
+		}
+
+		// Aiming
+		if (InputAction_Aim)
+		{
+			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Aim_Started);
+			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Aim_Completed);
+		}
 	}
 }
 
@@ -229,7 +250,7 @@ void ABlasterCharacter::InputAction_Jump_Started(const FInputActionValue& Value)
 /** Called when jump input is completed */
 void ABlasterCharacter::InputAction_Jump_Completed(const FInputActionValue& Value)
 {
-	AbilitySystemComponent->CancelAbilities(&JumpTags);
+	
 }
 
 /** Called when equip input is started */
@@ -249,6 +270,30 @@ void ABlasterCharacter::InputAction_Equip_Started(const FInputActionValue& Value
 void ABlasterCharacter::ServerInputAction_Equip_Started_Implementation()
 {
 	CombatComponent->EquipWeapon(OverlappingWeapon);
+}
+
+/** Called when crouch input is started */
+void ABlasterCharacter::InputAction_Crouch_Started(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->TryActivateAbilitiesByTag(CrouchTags);
+}
+
+/** Called when crouch input is completed */
+void ABlasterCharacter::InputAction_Crouch_Completed(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->CancelAbilities(&CrouchTags);
+}
+
+/** Called when aiming input is started */
+void ABlasterCharacter::InputAction_Aim_Started(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->TryActivateAbilitiesByTag(AimTags);
+}
+
+/** Called when aiming input is completed */
+void ABlasterCharacter::InputAction_Aim_Completed(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->CancelAbilities(&AimTags);
 }
 
 #pragma endregion INPUT
@@ -332,6 +377,12 @@ void ABlasterCharacter::GiveAbilities() const
 void ABlasterCharacter::ApplyStartupEffects() const
 {
 	AbilitySystemComponent->ApplyEffects(CharacterData.Effects);
+}
+
+/** Function bound to the delegate that is called whenever the MaxMovementSpeed attribute is changed */
+void ABlasterCharacter::OnMaxMovementSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Data.NewValue;
 }
 
 #pragma endregion GAS

@@ -8,6 +8,7 @@
 #include "InputActionValue.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
+#include "GameplayEffectTypes.h"
 
 // BlasterShooter
 #include "General/Structs/Data/CharacterData.h"
@@ -139,6 +140,18 @@ private:
 	/** Called when equip input is started */
 	void InputAction_Equip_Started(const FInputActionValue& Value);
 
+	/** Called when crouch input is started */
+	void InputAction_Crouch_Started(const FInputActionValue& Value);
+
+	/** Called when crouch input is completed */
+	void InputAction_Crouch_Completed(const FInputActionValue& Value);
+
+	/** Called when aiming input is started */
+	void InputAction_Aim_Started(const FInputActionValue& Value);
+
+	/** Called when aiming input is completed */
+	void InputAction_Aim_Completed(const FInputActionValue& Value);
+
 	/** RPC sent when equip input is started (client sends petition to server for equipping weapon) */
 	UFUNCTION(Server, Reliable)
 	void ServerInputAction_Equip_Started();
@@ -164,6 +177,14 @@ private:
 	/** InputAction for equipping input */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
 	TObjectPtr<UInputAction> InputAction_Equip;
+
+	/** InputAction for crouching input */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
+	TObjectPtr<UInputAction> InputAction_Crouch;
+
+	/** InputAction for aiming input */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
+	TObjectPtr<UInputAction> InputAction_Aim;
 
 #pragma endregion INPUT
 
@@ -240,6 +261,11 @@ protected:
 
 private:
 
+	/** Function bound to the delegate that is called whenever the MaxMovementSpeed attribute is changed */
+	void OnMaxMovementSpeedChanged(const FOnAttributeChangeData& Data);
+	
+private:
+
 	/** Ability system component */
 	UPROPERTY(VisibleDefaultsOnly, Category = "AA|GAS")
 	TObjectPtr<UBlasterAbilitySystemComponent> AbilitySystemComponent;
@@ -253,6 +279,14 @@ private:
 	/** Jump tags */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|GAS|Tags")
 	FGameplayTagContainer JumpTags;
+
+	/** Crouch tags */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|GAS|Tags")
+	FGameplayTagContainer CrouchTags;
+	
+	/** Aim tags */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|GAS|Tags")
+	FGameplayTagContainer AimTags;
 	
 #pragma endregion GAS_TAGS
 

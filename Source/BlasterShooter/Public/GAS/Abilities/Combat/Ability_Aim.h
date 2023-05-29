@@ -8,16 +8,16 @@
 // BlasterShooter
 #include "GAS/Abilities/BaseAbility.h"
 
-#include "Ability_Jump.generated.h"
+#include "Ability_Aim.generated.h"
 
 // Forward declarations - Unreal Engine
-class UAbilityTask_WaitInputRelease;
+class UCameraModifier;
 
 /**
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UAbility_Jump : public UBaseAbility
+class BLASTERSHOOTER_API UAbility_Aim : public UBaseAbility
 {
 	GENERATED_BODY()
 
@@ -30,30 +30,26 @@ protected:
 
 	/** Actually activate ability, do not call this directly */
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-
+	
 	/** Native function, called if an ability ends normally or abnormally. If bReplicate is set to true, try to replicate the ending to the client/server */
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 #pragma endregion OVERRIDES
+
+#pragma region AIM
+
+protected:
 	
-#pragma region JUMP
+	/** Aim camera modifier's class */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Aim")
+	TSubclassOf<UCameraModifier> AimCameraModifierClass;
 
 private:
 
-	/** Function bound to async task's input released delegate */
-	UFUNCTION()
-	void OnJumpInputReleased(float TimeHeld);
-
-	/** Function bound to character's on landed delegate */
-	UFUNCTION()
-	void OnLanded(const FHitResult& Hit);
-
-private:
-
-	/** Async task to wait for input release */
+	/** Aim camera modifier's reference */
 	UPROPERTY()
-	TObjectPtr<UAbilityTask_WaitInputRelease> TaskWaitInputRelease;
+	TObjectPtr<UCameraModifier> AimCameraModifier;
 
-#pragma endregion JUMP
+#pragma endregion AIM
 	
 };
