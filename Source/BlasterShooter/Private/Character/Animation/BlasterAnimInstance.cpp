@@ -7,6 +7,7 @@
 
 // BlasterShooter
 #include "Character/BlasterCharacter.h"
+#include "Kismet/KismetMathLibrary.h"
 
 #pragma region OVERRIDES
 
@@ -33,22 +34,55 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			return;
 		}
 	}
-	
-	// Calculate character's current speed
-	const FVector Velocity = BlasterCharacter->GetVelocity();
-	Speed = Velocity.Size2D();
 
+	SetBoolVariables(DeltaSeconds);
+	SetFloatVariables(DeltaSeconds);
+}
+
+#pragma endregion OVERRIDES
+
+#pragma region CHARACTER
+
+/** Set boolean variables */
+void UBlasterAnimInstance::SetBoolVariables(float DeltaSeconds)
+{
 	// Set whether character's in air
 	bIsInAir = BlasterCharacter->GetCharacterMovement()->IsFalling();
 
 	// Set whether character accelerating
 	bIsAccelerating = BlasterCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
 
+	// Set whether character is crouched
+	bIsCrouched = BlasterCharacter->bIsCrouched;
+	
 	// Set whether character has a weapon equipped
 	bIsWeaponEquipped = BlasterCharacter->IsWeaponEquipped();
 
-	// Set whether character is crouching
-	bIsCrouched = BlasterCharacter->bIsCrouched;
+	// Set whether character is aiming
+	bIsAiming = BlasterCharacter->IsAiming();
 }
 
-#pragma endregion OVERRIDES
+/** Set float variables */
+void UBlasterAnimInstance::SetFloatVariables(float DeltaSeconds)
+{
+	// Calculate character's current speed
+	const FVector Velocity = BlasterCharacter->GetVelocity();
+	Speed = Velocity.Size2D();
+
+	// Calculate Yaw offset for strafing
+	const FRotator AimRotation = BlasterCharacter->GetBaseAimRotation();
+	const FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(BlasterCharacter->GetVelocity());
+	const FRotator TargetDeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
+	DeltaYawOffsetRotation = FMath::RInterpTo(DeltaYawOffsetRotation, TargetDeltaRotation, DeltaSeconds, YawOffsetInterpSpeed);
+	YawOffset = DeltaYawOffsetRotation.Yaw;
+
+	// Calculate character's leaning
+	LastCharacterRotation = CurrentCharacterRotation;
+	CurrentCharacterRotation = BlasterCharacter->GetActorRotation();
+	const FRotator DeltaCharacterRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentCharacterRotation, LastCharacterRotation);
+	const float TargetLean = DeltaCharacterRotation.Yaw / DeltaSeconds;
+	const float InterpLean = FMath::FInterpTo(Lean, TargetLean, DeltaSeconds, LeanInterpSpeed);
+	Lean = FMath::Clamp(InterpLean, -90.f, 90.f);
+}
+
+#pragma endregion CHARACTER

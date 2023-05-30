@@ -228,6 +228,10 @@ public:
 	UFUNCTION()
 	bool IsWeaponEquipped() const;
 
+	/** Returns whether character is aiming */
+	UFUNCTION()
+	bool IsAiming() const;
+
 private:
 
 	/** RepNotify for OverlappingWeapon */

@@ -35,6 +35,14 @@ public:
 
 private:
 
+	/** Set boolean variables */
+	void SetBoolVariables(float DeltaSeconds);
+	
+	/** Set float variables */
+	void SetFloatVariables(float DeltaSeconds);
+
+private:
+
 	/** Character's reference */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	TObjectPtr<ABlasterCharacter> BlasterCharacter;
@@ -51,13 +59,42 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	bool bIsAccelerating;
 
+	/** Whether character is crouched */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	bool bIsCrouched;
+
 	/** Whether character has an equipped weapon */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	bool bIsWeaponEquipped;
 
-	/** Whether character is crouching */
+	/** Whether character is aiming */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
-	bool bIsCrouched; 
+	bool bIsAiming;
+
+	/** Yaw offset */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	float YawOffset;
+
+	/** Character's delta rotation for calculating Yaw offset */
+	FRotator DeltaYawOffsetRotation;
+
+	/** Yaw offset's interpolation speed */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true, ClampMin = 0.f, UIMin = 0.f))
+	float YawOffsetInterpSpeed = 6.f;
+
+	/** Lean */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	float Lean;
+
+	/** Character's rotation on last frame */
+	FRotator LastCharacterRotation;
+
+	/** Character's current rotation */
+	FRotator CurrentCharacterRotation;
+
+	/** Lean's interpolation speed */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true, ClampMin = 0.f, UIMin = 0.f))
+	float LeanInterpSpeed = 3.f;
 
 #pragma endregion CHARACTER
 	

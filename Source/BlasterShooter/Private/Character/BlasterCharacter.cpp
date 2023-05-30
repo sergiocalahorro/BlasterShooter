@@ -198,7 +198,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Aiming
 		if (InputAction_Aim)
 		{
-			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Aim_Started);
+			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Started, this, &ABlasterCharacter::InputAction_Aim_Started);
 			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Aim_Completed);
 		}
 	}
@@ -287,13 +287,17 @@ void ABlasterCharacter::InputAction_Crouch_Completed(const FInputActionValue& Va
 /** Called when aiming input is started */
 void ABlasterCharacter::InputAction_Aim_Started(const FInputActionValue& Value)
 {
-	AbilitySystemComponent->TryActivateAbilitiesByTag(AimTags);
+	if (AbilitySystemComponent->TryActivateAbilitiesByTag(AimTags))
+	{
+		CombatComponent->SetIsAiming(true);
+	}
 }
 
 /** Called when aiming input is completed */
 void ABlasterCharacter::InputAction_Aim_Completed(const FInputActionValue& Value)
 {
 	AbilitySystemComponent->CancelAbilities(&AimTags);
+	CombatComponent->SetIsAiming(false);
 }
 
 #pragma endregion INPUT
@@ -355,6 +359,12 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeaponActor* OldOverlappingWeap
 bool ABlasterCharacter::IsWeaponEquipped() const
 {
 	return CombatComponent->IsWeaponEquipped();
+}
+
+/** Returns whether character is aiming */
+bool ABlasterCharacter::IsAiming() const
+{
+	return CombatComponent->IsAiming();
 }
 
 #pragma endregion WEAPON

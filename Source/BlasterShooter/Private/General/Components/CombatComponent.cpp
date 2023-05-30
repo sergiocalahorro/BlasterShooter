@@ -5,6 +5,7 @@
 // Unreal Engine
 #include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // BlasterShooter
 #include "Character/BlasterCharacter.h"
@@ -40,6 +41,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
+	DOREPLIFETIME(UCombatComponent, bIsAiming);
 }
 
 #pragma endregion OVERRIDES
@@ -63,6 +65,31 @@ void UCombatComponent::EquipWeapon(AWeaponActor* Weapon)
 	}
 	
 	EquippedWeapon->SetOwner(BlasterCharacter);
+	BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+	BlasterCharacter->bUseControllerRotationYaw = true;
+}
+
+/** RepNotify for EquippedWeapon */
+void UCombatComponent::OnRep_EquippedWeapon()
+{
+	if (EquippedWeapon && BlasterCharacter)
+	{
+		BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
+		BlasterCharacter->bUseControllerRotationYaw = true;
+	}
+}
+
+/** Set whether this component's owner is aiming */
+void UCombatComponent::SetIsAiming(bool bInIsAiming)
+{
+	bIsAiming = bInIsAiming;
+	ServerSetIsAiming(bInIsAiming);
+}
+
+/** Server RPC for setting aiming */
+void UCombatComponent::ServerSetIsAiming_Implementation(bool bInIsAiming)
+{
+	bIsAiming = bInIsAiming; 
 }
 
 #pragma endregion EQUIPMENT

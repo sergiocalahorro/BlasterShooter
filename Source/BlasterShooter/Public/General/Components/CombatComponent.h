@@ -58,6 +58,24 @@ public:
 	/** Returns whether this component's owner has an equipped weapon */
 	UFUNCTION()
 	bool IsWeaponEquipped() const { return EquippedWeapon != nullptr; }
+
+	/** Returns whether this component's owner is aiming */
+	UFUNCTION()
+	bool IsAiming() const { return bIsAiming; }
+
+	/** Set whether this component's owner is aiming */
+	UFUNCTION()
+	void SetIsAiming(bool bInIsAiming);
+
+	/** Server RPC for setting aiming */
+	UFUNCTION(Server, Reliable)
+	void ServerSetIsAiming(bool bInIsAiming);
+
+private:
+
+	/** RepNotify for EquippedWeapon */
+	UFUNCTION()
+	void OnRep_EquippedWeapon();
 	
 protected:
 
@@ -67,13 +85,17 @@ protected:
 
 private:
 
-	/** Currently equipped weapon */
-	UPROPERTY(Replicated)
-	TObjectPtr<AWeaponActor> EquippedWeapon;
-
-	/** Currently equipped weapon */
+	/** Character's reference */
 	UPROPERTY()
 	TObjectPtr<ABlasterCharacter> BlasterCharacter;
+
+	/** Currently equipped weapon */
+	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
+	TObjectPtr<AWeaponActor> EquippedWeapon;
+	
+	/** Whether owner of this component is aiming */
+	UPROPERTY(Replicated)
+	bool bIsAiming;
 
 #pragma endregion EQUIPMENT
 	
