@@ -146,8 +146,8 @@ private:
 	/** Called when crouch input is completed */
 	void InputAction_Crouch_Completed(const FInputActionValue& Value);
 
-	/** Called when aiming input is started */
-	void InputAction_Aim_Started(const FInputActionValue& Value);
+	/** Called when aiming input is triggered */
+	void InputAction_Aim_Triggered(const FInputActionValue& Value);
 
 	/** Called when aiming input is completed */
 	void InputAction_Aim_Completed(const FInputActionValue& Value);

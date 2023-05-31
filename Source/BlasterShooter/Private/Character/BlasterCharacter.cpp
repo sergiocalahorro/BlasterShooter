@@ -11,9 +11,10 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 
 // BlasterShooter
-#include "Components/WidgetComponent.h"
 #include "General/DataAssets/DataAsset_CharacterData.h"
 #include "GAS/AbilitySystem/BlasterAbilitySystemComponent.h"
 #include "GAS/Attributes/BlasterAttributeSet.h"
@@ -50,6 +51,12 @@ ABlasterCharacter::ABlasterCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->JumpZVelocity = 1600.f;
+	GetCharacterMovement()->GravityScale = 4.f;
+
+	// Configure collisions
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	
 	// GAS setup
 	AbilitySystemComponent = CreateDefaultSubobject<UBlasterAbilitySystemComponent>(TEXT("AbilitySystem"));
@@ -198,7 +205,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// Aiming
 		if (InputAction_Aim)
 		{
-			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Started, this, &ABlasterCharacter::InputAction_Aim_Started);
+			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Aim_Triggered);
 			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Aim_Completed);
 		}
 	}
@@ -284,20 +291,16 @@ void ABlasterCharacter::InputAction_Crouch_Completed(const FInputActionValue& Va
 	AbilitySystemComponent->CancelAbilities(&CrouchTags);
 }
 
-/** Called when aiming input is started */
-void ABlasterCharacter::InputAction_Aim_Started(const FInputActionValue& Value)
+/** Called when aiming input is triggered */
+void ABlasterCharacter::InputAction_Aim_Triggered(const FInputActionValue& Value)
 {
-	if (AbilitySystemComponent->TryActivateAbilitiesByTag(AimTags))
-	{
-		CombatComponent->SetIsAiming(true);
-	}
+	AbilitySystemComponent->TryActivateAbilitiesByTag(AimTags);
 }
 
 /** Called when aiming input is completed */
 void ABlasterCharacter::InputAction_Aim_Completed(const FInputActionValue& Value)
 {
 	AbilitySystemComponent->CancelAbilities(&AimTags);
-	CombatComponent->SetIsAiming(false);
 }
 
 #pragma endregion INPUT

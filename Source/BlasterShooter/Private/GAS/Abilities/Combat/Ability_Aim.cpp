@@ -23,6 +23,11 @@ void UAbility_Aim::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	if (UCombatComponent* CombatComponent = Cast<UCombatComponent>(ActorInfo->AvatarActor.Get()->FindComponentByClass(UCombatComponent::StaticClass())))
+	{
+		CombatComponent->SetIsAiming(true);
+	}
+
 	if (APlayerCameraManager* PlayerCameraManager = ActorInfo->PlayerController->PlayerCameraManager)
 	{
 		AimCameraModifier = PlayerCameraManager->AddNewCameraModifier(AimCameraModifierClass);
@@ -36,6 +41,11 @@ void UAbility_Aim::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 /** Native function, called if an ability ends normally or abnormally. If bReplicate is set to true, try to replicate the ending to the client/server */
 void UAbility_Aim::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	if (UCombatComponent* CombatComponent = Cast<UCombatComponent>(ActorInfo->AvatarActor.Get()->FindComponentByClass(UCombatComponent::StaticClass())))
+	{
+		CombatComponent->SetIsAiming(false);
+	}
+	
 	if (APlayerCameraManager* PlayerCameraManager = ActorInfo->PlayerController.Get()->PlayerCameraManager)
 	{
 		if (AimCameraModifier)
