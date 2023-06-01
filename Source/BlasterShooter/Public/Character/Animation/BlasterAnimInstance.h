@@ -6,9 +6,13 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 
+// BlasterShooter
+#include "General/Enums/Animation/TurningInPlace.h"
+
 #include "BlasterAnimInstance.generated.h"
 
 // Forward declarations - BlasterShooter
+class AWeaponActor;
 class ABlasterCharacter;
 
 /**
@@ -41,6 +45,12 @@ private:
 	/** Set float variables */
 	void SetFloatVariables(float DeltaSeconds);
 
+	/** Set enum variables */
+	void SetEnumVariables(float DeltaSeconds);
+
+	/** Update weapon */
+	void UpdateWeapon(float DeltaSeconds);
+
 private:
 
 	/** Character's reference */
@@ -67,6 +77,14 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	bool bIsWeaponEquipped;
 
+	/** Currently equipped weapon */
+	UPROPERTY()
+	TObjectPtr<AWeaponActor> EquippedWeapon;
+
+	/** Left hand's socket name (in Weapon) */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	FName LeftHandSocketName = FName("LeftHandSocket");
+	
 	/** Whether character is aiming */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	bool bIsAiming;
@@ -95,6 +113,22 @@ private:
 	/** Lean's interpolation speed */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true, ClampMin = 0.f, UIMin = 0.f))
 	float LeanInterpSpeed = 3.f;
+
+	/** AimOffset's Yaw */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	float AimOffsetYaw;
+
+	/** AimOffset's Pitch */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	float AimOffsetPitch;
+
+	/** Left hand's transform */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	FTransform LeftHandTransform;
+
+	/** Character's turning in place state */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	ETurningInPlace TurningInPlace;
 
 #pragma endregion CHARACTER
 	

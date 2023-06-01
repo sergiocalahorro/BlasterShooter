@@ -11,6 +11,7 @@
 #include "GameplayEffectTypes.h"
 
 // BlasterShooter
+#include "General/Enums/Animation/TurningInPlace.h"
 #include "General/Structs/Data/CharacterData.h"
 
 #include "BlasterCharacter.generated.h"
@@ -196,11 +197,19 @@ public:
 	UFUNCTION()
 	void SetCharacterData(const FCharacterData& InCharacterData);
 
+	/** Getter of TurningInPlace */
+	UFUNCTION()
+	ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
+
 private:
 
 	/** Initialize character */
 	UFUNCTION()
 	void InitializeCharacter();
+
+	/** Turn in place */
+	UFUNCTION()
+	void TurnInPlace(float DeltaSeconds);
 
 protected:
 
@@ -213,6 +222,10 @@ private:
 	/** Character's data */
 	UPROPERTY()
 	FCharacterData CharacterData;
+
+	/** Character's turning in place state */
+	UPROPERTY()
+	ETurningInPlace TurningInPlace;
 
 #pragma endregion CORE
 
@@ -228,9 +241,27 @@ public:
 	UFUNCTION()
 	bool IsWeaponEquipped() const;
 
+	/** Returns character's currently equipped weapon */
+	UFUNCTION()
+	AWeaponActor* GetEquippedWeapon() const;
+
 	/** Returns whether character is aiming */
 	UFUNCTION()
 	bool IsAiming() const;
+
+	/** Getter of AimOffsetYaw */
+	UFUNCTION()
+	float GetAimOffsetYaw() const;
+
+	/** Getter of AimOffsetPitch */
+	UFUNCTION()
+	float GetAimOffsetPitch() const;
+
+protected:
+
+	/** Calculate AimOffset's Yaw and Pitch */
+	UFUNCTION()
+	void AimOffset(float DeltaSeconds);
 
 private:
 
@@ -243,6 +274,15 @@ private:
 	/** Overlapped weapon */
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
 	TObjectPtr<AWeaponActor> OverlappingWeapon;
+
+	/** AimOffset's Yaw */
+	float AimOffsetYaw;
+
+	/** AimOffset's Pitch */
+	float AimOffsetPitch;
+
+	/** Initial aim rotation stored when character just stopped moving */
+	FRotator InitialAimRotation;
 
 #pragma endregion WEAPON
 

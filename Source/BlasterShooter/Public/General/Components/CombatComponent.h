@@ -51,6 +51,10 @@ public:
 	UFUNCTION()
 	void SetBlasterCharacter(ABlasterCharacter* InBlasterCharacter) { BlasterCharacter = InBlasterCharacter; }
 
+	/** Getter of EquippedWeapon */
+	UFUNCTION()
+	AWeaponActor* GetEquippedWeapon() const { return EquippedWeapon; }
+
 	/** Equip weapon */
 	UFUNCTION()
 	void EquipWeapon(AWeaponActor* Weapon);
@@ -81,7 +85,7 @@ protected:
 
 	/** Socket name to attach the weapon to */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Equipment")
-	FName WeaponSocketName;
+	FName WeaponSocketName = FName("RightHandSocket");
 
 private:
 

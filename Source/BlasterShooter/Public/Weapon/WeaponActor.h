@@ -63,6 +63,14 @@ public:
 	/** Setter of WeaponState */
 	UFUNCTION()
 	void SetWeaponState(EWeaponState InWeaponState);
+	
+	/** Getter of WeaponDataAsset */
+	UFUNCTION()
+	UDataAsset_WeaponData* GetWeaponData() const { return WeaponDataAsset; }
+
+	/** Get Weapon's skeletal mesh */
+	UFUNCTION()
+	USkeletalMeshComponent* GetWeaponSkeletalMesh() const { return CastChecked<USkeletalMeshComponent>(WeaponMesh); }
 
 protected:
 

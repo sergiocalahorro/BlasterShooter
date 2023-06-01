@@ -4,10 +4,11 @@
 
 // Unreal Engine
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // BlasterShooter
 #include "Character/BlasterCharacter.h"
-#include "Kismet/KismetMathLibrary.h"
+#include "Weapon/WeaponActor.h"
 
 #pragma region OVERRIDES
 
@@ -37,6 +38,8 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	SetBoolVariables(DeltaSeconds);
 	SetFloatVariables(DeltaSeconds);
+	SetEnumVariables(DeltaSeconds);
+	UpdateWeapon(DeltaSeconds);
 }
 
 #pragma endregion OVERRIDES
@@ -83,6 +86,40 @@ void UBlasterAnimInstance::SetFloatVariables(float DeltaSeconds)
 	const float TargetLean = DeltaCharacterRotation.Yaw / DeltaSeconds;
 	const float InterpLean = FMath::FInterpTo(Lean, TargetLean, DeltaSeconds, LeanInterpSpeed);
 	Lean = FMath::Clamp(InterpLean, -90.f, 90.f);
+
+	// Aim Offset
+	AimOffsetYaw = BlasterCharacter->GetAimOffsetYaw();
+	AimOffsetPitch = BlasterCharacter->GetAimOffsetPitch();
+}
+
+/** Set enum variables */
+void UBlasterAnimInstance::SetEnumVariables(float DeltaSeconds)
+{
+	TurningInPlace = BlasterCharacter->GetTurningInPlace();
+}
+
+/** Update weapon */
+void UBlasterAnimInstance::UpdateWeapon(float DeltaSeconds)
+{
+	if (!bIsWeaponEquipped)
+	{
+		return;
+	}
+
+	EquippedWeapon = BlasterCharacter->GetEquippedWeapon();
+
+	if (EquippedWeapon && EquippedWeapon->GetWeaponSkeletalMesh() && BlasterCharacter->GetMesh())
+	{
+		LeftHandTransform = EquippedWeapon->GetWeaponSkeletalMesh()->GetSocketTransform(LeftHandSocketName, RTS_World);
+
+		FVector OutPosition;
+		FRotator OutRotation;
+
+		// Convert left hand socket's world transform to transform relative to the right hand's bone
+		BlasterCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+		LeftHandTransform.SetLocation(OutPosition);
+		LeftHandTransform.SetRotation(FQuat(OutRotation));
+	}
 }
 
 #pragma endregion CHARACTER

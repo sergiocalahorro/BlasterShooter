@@ -19,6 +19,7 @@
 #include "GAS/AbilitySystem/BlasterAbilitySystemComponent.h"
 #include "GAS/Attributes/BlasterAttributeSet.h"
 #include "General/Components/CombatComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UI/HUD/OverheadWidget.h"
 #include "Weapon/WeaponActor.h"
 
@@ -108,6 +109,8 @@ void ABlasterCharacter::BeginPlay()
 void ABlasterCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	AimOffset(DeltaSeconds);
 }
 
 /** Called when this Pawn is possessed (only called on the server) */
@@ -320,6 +323,21 @@ void ABlasterCharacter::InitializeCharacter()
 	// OverheadWidgetRef->ShowPlayerNetRole(this);
 }
 
+/** Turn in place */
+void ABlasterCharacter::TurnInPlace(float DeltaSeconds)
+{
+	UE_LOG(LogTemp, Warning, TEXT("ABlasterCharacter::TurnInPlace - AimOffsetYaw: %f"), AimOffsetYaw);
+
+	if (AimOffsetYaw > 90.f)
+	{
+		TurningInPlace = ETurningInPlace::Right;
+	}
+	else if (AimOffsetYaw < -90.f)
+	{
+		TurningInPlace = ETurningInPlace::Left;
+	}
+}
+
 #pragma endregion CORE
 
 #pragma region WEAPON
@@ -364,10 +382,68 @@ bool ABlasterCharacter::IsWeaponEquipped() const
 	return CombatComponent->IsWeaponEquipped();
 }
 
+/** Returns character's currently equipped weapon */
+AWeaponActor* ABlasterCharacter::GetEquippedWeapon() const
+{
+	return CombatComponent->GetEquippedWeapon();
+}
+
 /** Returns whether character is aiming */
 bool ABlasterCharacter::IsAiming() const
 {
 	return CombatComponent->IsAiming();
+}
+
+/** Getter of AimOffsetYaw */
+float ABlasterCharacter::GetAimOffsetYaw() const
+{
+	return AimOffsetYaw;
+}
+
+/** Getter of AimOffsetPitch */
+float ABlasterCharacter::GetAimOffsetPitch() const
+{
+	return AimOffsetPitch;
+}
+
+/** Calculate AimOffset's Yaw and Pitch */
+void ABlasterCharacter::AimOffset(float DeltaSeconds)
+{
+	if (!IsWeaponEquipped())
+	{
+		return;
+	}
+	
+	const float Speed = GetVelocity().Size2D();
+	const bool bIsInAir = GetCharacterMovement()->IsFalling();
+
+	if (Speed > 0.f || bIsInAir)
+	{
+		// Character's moving -> reset aim offset
+		InitialAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		AimOffsetYaw = 0.f;
+		bUseControllerRotationYaw = true;
+		TurningInPlace = ETurningInPlace::NotTurning;
+	}
+	else
+	{
+		// Character's standing still -> calculate delta aim rotation yaw
+		const FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		const FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, InitialAimRotation);
+		AimOffsetYaw = DeltaAimRotation.Yaw;
+		bUseControllerRotationYaw = false;
+		TurnInPlace(DeltaSeconds);
+	}
+
+	AimOffsetPitch = GetBaseAimRotation().Pitch;
+
+	// Map pitch from [270, 360) to [-90, 0)
+	if (AimOffsetPitch > 90.f && !IsLocallyControlled())
+	{
+		const FVector2D InRange(270.f, 360.f);
+		const FVector2D OutRange(-90.f, 0.f);
+		AimOffsetPitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AimOffsetPitch);
+	}
 }
 
 #pragma endregion WEAPON
