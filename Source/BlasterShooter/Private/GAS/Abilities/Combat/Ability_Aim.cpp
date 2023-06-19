@@ -45,12 +45,15 @@ void UAbility_Aim::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 	{
 		CombatComponent->SetIsAiming(false);
 	}
-	
-	if (APlayerCameraManager* PlayerCameraManager = ActorInfo->PlayerController.Get()->PlayerCameraManager)
+
+	if (const APlayerController* PlayerController = ActorInfo->PlayerController.Get())
 	{
-		if (AimCameraModifier)
+		if (APlayerCameraManager* PlayerCameraManager = PlayerController->PlayerCameraManager)
 		{
-			PlayerCameraManager->RemoveCameraModifier(AimCameraModifier);
+			if (AimCameraModifier)
+			{
+				PlayerCameraManager->RemoveCameraModifier(AimCameraModifier);
+			}
 		}
 	}
 	

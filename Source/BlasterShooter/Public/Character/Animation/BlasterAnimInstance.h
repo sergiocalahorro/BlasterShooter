@@ -12,7 +12,7 @@
 #include "BlasterAnimInstance.generated.h"
 
 // Forward declarations - BlasterShooter
-class AWeaponActor;
+class ABaseWeapon;
 class ABlasterCharacter;
 
 /**
@@ -79,7 +79,7 @@ private:
 
 	/** Currently equipped weapon */
 	UPROPERTY()
-	TObjectPtr<AWeaponActor> EquippedWeapon;
+	TObjectPtr<ABaseWeapon> EquippedWeapon;
 
 	/** Left hand's socket name (in Weapon) */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))

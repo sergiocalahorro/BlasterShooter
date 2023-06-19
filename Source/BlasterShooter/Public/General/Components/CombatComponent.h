@@ -9,8 +9,10 @@
 #include "CombatComponent.generated.h"
 
 // Forward declarations - BlasterShooter
-class ABlasterCharacter;
-class AWeaponActor;
+class ABaseWeapon;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponEquippedSignature, bool, bShouldAffectMovement);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponUnequippedSignature, bool, bShouldAffectMovement);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BLASTERSHOOTER_API UCombatComponent : public UActorComponent
@@ -47,17 +49,13 @@ protected:
 
 public:
 
-	/** Setter of BlasterCharacter */
-	UFUNCTION()
-	void SetBlasterCharacter(ABlasterCharacter* InBlasterCharacter) { BlasterCharacter = InBlasterCharacter; }
-
 	/** Getter of EquippedWeapon */
 	UFUNCTION()
-	AWeaponActor* GetEquippedWeapon() const { return EquippedWeapon; }
+	ABaseWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 
 	/** Equip weapon */
 	UFUNCTION()
-	void EquipWeapon(AWeaponActor* Weapon);
+	void EquipWeapon(ABaseWeapon* Weapon);
 
 	/** Returns whether this component's owner has an equipped weapon */
 	UFUNCTION()
@@ -80,6 +78,16 @@ private:
 	/** RepNotify for EquippedWeapon */
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
+
+public:
+
+	/** Delegate called when weapon is equipped */
+	UPROPERTY(BlueprintAssignable)
+	FWeaponEquippedSignature WeaponEquippedDelegate;
+
+	/** Delegate called when weapon is unequipped */
+	UPROPERTY(BlueprintAssignable)
+	FWeaponUnequippedSignature WeaponUnequippedDelegate;
 	
 protected:
 
@@ -89,13 +97,9 @@ protected:
 
 private:
 
-	/** Character's reference */
-	UPROPERTY()
-	TObjectPtr<ABlasterCharacter> BlasterCharacter;
-
 	/** Currently equipped weapon */
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
-	TObjectPtr<AWeaponActor> EquippedWeapon;
+	TObjectPtr<ABaseWeapon> EquippedWeapon;
 	
 	/** Whether owner of this component is aiming */
 	UPROPERTY(Replicated)

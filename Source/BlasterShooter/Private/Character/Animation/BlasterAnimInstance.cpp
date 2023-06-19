@@ -8,7 +8,7 @@
 
 // BlasterShooter
 #include "Character/BlasterCharacter.h"
-#include "Weapon/WeaponActor.h"
+#include "Weapon/BaseWeapon.h"
 
 #pragma region OVERRIDES
 

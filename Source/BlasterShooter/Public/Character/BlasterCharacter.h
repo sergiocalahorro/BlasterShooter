@@ -30,7 +30,7 @@ class UBlasterAbilitySystemComponent;
 class UDataAsset_CharacterData;
 class UOverheadWidget;
 class UCombatComponent;
-class AWeaponActor;
+class ABaseWeapon;
 
 UCLASS()
 class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface
@@ -55,6 +55,9 @@ public:
 	
 	/** Called upon landing when falling, to perform actions based on the Hit result */
 	virtual void Landed(const FHitResult& Hit) override;
+	
+	/** Make the character jump on the next update */
+	virtual void Jump() override;
 
 protected:
 
@@ -141,6 +144,10 @@ private:
 	/** Called when equip input is started */
 	void InputAction_Equip_Started(const FInputActionValue& Value);
 
+	/** RPC sent when equip input is started (client sends petition to server for equipping weapon) */
+	UFUNCTION(Server, Reliable)
+	void ServerInputAction_Equip_Started();
+
 	/** Called when crouch input is started */
 	void InputAction_Crouch_Started(const FInputActionValue& Value);
 
@@ -153,9 +160,11 @@ private:
 	/** Called when aiming input is completed */
 	void InputAction_Aim_Completed(const FInputActionValue& Value);
 
-	/** RPC sent when equip input is started (client sends petition to server for equipping weapon) */
-	UFUNCTION(Server, Reliable)
-	void ServerInputAction_Equip_Started();
+	/** Called when firing input is triggered */
+	void InputAction_Fire_Triggered(const FInputActionValue& Value);
+
+	/** Called when firing input is completed */
+	void InputAction_Fire_Completed(const FInputActionValue& Value);
 
 private:
 
@@ -187,6 +196,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
 	TObjectPtr<UInputAction> InputAction_Aim;
 
+	/** InputAction for firing input */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Input")
+	TObjectPtr<UInputAction> InputAction_Fire;
+
 #pragma endregion INPUT
 
 #pragma region CORE
@@ -206,10 +219,6 @@ private:
 	/** Initialize character */
 	UFUNCTION()
 	void InitializeCharacter();
-
-	/** Turn in place */
-	UFUNCTION()
-	void TurnInPlace(float DeltaSeconds);
 
 protected:
 
@@ -235,7 +244,7 @@ public:
 
 	/** Setter of OverlappingWeapon */
 	UFUNCTION()
-	void SetOverlappingWeapon(AWeaponActor* InOverlappingWeapon);
+	void SetOverlappingWeapon(ABaseWeapon* InOverlappingWeapon);
 	
 	/** Returns whether character has a weapon equipped */
 	UFUNCTION()
@@ -243,7 +252,7 @@ public:
 
 	/** Returns character's currently equipped weapon */
 	UFUNCTION()
-	AWeaponActor* GetEquippedWeapon() const;
+	ABaseWeapon* GetEquippedWeapon() const;
 
 	/** Returns whether character is aiming */
 	UFUNCTION()
@@ -265,15 +274,27 @@ protected:
 
 private:
 
+	/** Turn in place */
+	UFUNCTION()
+	void TurnInPlace(float DeltaSeconds);
+
 	/** RepNotify for OverlappingWeapon */
 	UFUNCTION()
-	void OnRep_OverlappingWeapon(AWeaponActor* OldOverlappingWeapon);
+	void OnRep_OverlappingWeapon(ABaseWeapon* OldOverlappingWeapon);
+
+	/** Functionality performed when a weapon is equipped */
+	UFUNCTION()
+	void OnWeaponEquipped(bool bShouldAffectMovement);
+
+	/** Functionality performed when a weapon is unequipped */
+	UFUNCTION()
+	void OnWeaponUnequipped(bool bShouldAffectMovement);
 
 private:
 
 	/** Overlapped weapon */
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
-	TObjectPtr<AWeaponActor> OverlappingWeapon;
+	TObjectPtr<ABaseWeapon> OverlappingWeapon;
 
 	/** AimOffset's Yaw */
 	float AimOffsetYaw;
@@ -283,6 +304,17 @@ private:
 
 	/** Initial aim rotation stored when character just stopped moving */
 	FRotator InitialAimRotation;
+
+	/** AimOffset's Yaw (used for interpolating when rotating the root bone) */
+	float InterpAimOffsetYaw;
+
+	/** Speed for interpolating aim offset's yaw back to zero when angle to turn is reached */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Weapon|TurnInPlace")
+	float TurnInPlaceSpeed = 10.f;
+
+	/** Angle threshold for resetting 'TurningInPlace' to 'NotTurning' */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Weapon|TurnInPlace")
+	float ResetTurningAngleThreshold = 15.f;
 
 #pragma endregion WEAPON
 
@@ -331,6 +363,10 @@ private:
 	/** Aim tags */
 	UPROPERTY(EditDefaultsOnly, Category = "AA|GAS|Tags")
 	FGameplayTagContainer AimTags;
+	
+	/** Fire tags */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|GAS|Tags")
+	FGameplayTagContainer FireTags;
 	
 #pragma endregion GAS_TAGS
 

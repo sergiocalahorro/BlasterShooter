@@ -5,10 +5,12 @@
 // Unreal Engine
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "General/DataAssets/DataAsset_WeaponData.h"
 #include "General/Enums/Weapon/WeaponState.h"
 
-#include "WeaponActor.generated.h"
+#include "BaseWeapon.generated.h"
 
+class UGameplayAbility;
 // Forward declarations - Unreal Engine
 class USphereComponent;
 class UWidgetComponent;
@@ -17,7 +19,7 @@ class UWidgetComponent;
 class UDataAsset_WeaponData;
 
 UCLASS()
-class BLASTERSHOOTER_API AWeaponActor : public AActor
+class BLASTERSHOOTER_API ABaseWeapon : public AActor
 {
 	GENERATED_BODY()
 
@@ -26,7 +28,7 @@ class BLASTERSHOOTER_API AWeaponActor : public AActor
 public:
 	
 	/** Sets default values for this actor's properties */
-	AWeaponActor();
+	ABaseWeapon();
 
 #pragma endregion INITIALIZATION
 
@@ -52,13 +54,17 @@ protected:
 
 public:
 
+	/** Fire weapon */
+	UFUNCTION()
+	void Fire();
+
 	/** Show/hide pickup widget */
 	UFUNCTION()
 	void TogglePickupWidget(bool bShowWidget) const;
 
 	/** Getter of WeaponState */
 	UFUNCTION()
-	EWeaponState GetWeaponState() const { return WeaponState; }
+	EWeaponState GetWeaponState() const { return WeaponState;	}
 
 	/** Setter of WeaponState */
 	UFUNCTION()
@@ -71,6 +77,10 @@ public:
 	/** Get Weapon's skeletal mesh */
 	UFUNCTION()
 	USkeletalMeshComponent* GetWeaponSkeletalMesh() const { return CastChecked<USkeletalMeshComponent>(WeaponMesh); }
+
+	/** Getter of Weapon's ability */
+	UFUNCTION()
+	TSubclassOf<UGameplayAbility> GetWeaponAbility() const;
 
 protected:
 
@@ -86,6 +96,14 @@ protected:
 	UFUNCTION()
 	void OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	/** Server RPC for firing weapon */
+	UFUNCTION(Server, Reliable)
+	void ServerFire();
+
+	/** Multicast RPC for firing weapon */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFire();
+	
 private:
 
 	/** RepNotify for WeaponState */

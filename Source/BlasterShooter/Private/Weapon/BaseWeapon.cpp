@@ -1,6 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Weapon/WeaponActor.h"
+#include "Weapon/BaseWeapon.h"
 
 // Forward declarations - Unreal Engine
 #include "Components/SphereComponent.h"
@@ -14,7 +14,7 @@
 #pragma region INITIALIZATION
 
 /** Sets default values */
-AWeaponActor::AWeaponActor()
+ABaseWeapon::ABaseWeapon()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
@@ -34,7 +34,7 @@ AWeaponActor::AWeaponActor()
 #pragma region OVERRIDES
 
 /** Called when an instance of this class is placed (in editor) or spawned */
-void AWeaponActor::OnConstruction(const FTransform& Transform)
+void ABaseWeapon::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	
@@ -42,13 +42,13 @@ void AWeaponActor::OnConstruction(const FTransform& Transform)
 }
 
 /** Allow actors to initialize themselves on the C++ side after all of their components have been initialized, only called during gameplay */
-void AWeaponActor::PostInitializeComponents()
+void ABaseWeapon::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 }
 
 /** Called when the game starts or when spawned */
-void AWeaponActor::BeginPlay()
+void ABaseWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -56,19 +56,19 @@ void AWeaponActor::BeginPlay()
 	{
 		PickupTrigger->SetCollisionEnabled((ECollisionEnabled::QueryAndPhysics));
 		PickupTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-		PickupTrigger->OnComponentBeginOverlap.AddUniqueDynamic(this, &AWeaponActor::OnPickupTriggerBeginOverlap);
-		PickupTrigger->OnComponentEndOverlap.AddUniqueDynamic(this, &AWeaponActor::OnPickupTriggerEndOverlap);
+		PickupTrigger->OnComponentBeginOverlap.AddUniqueDynamic(this, &ABaseWeapon::OnPickupTriggerBeginOverlap);
+		PickupTrigger->OnComponentEndOverlap.AddUniqueDynamic(this, &ABaseWeapon::OnPickupTriggerEndOverlap);
 	}
 
 	TogglePickupWidget(false);
 }
 
 /** Returns properties that are replicated for the lifetime of the actor channel */
-void AWeaponActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void ABaseWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AWeaponActor, WeaponState);
+	DOREPLIFETIME(ABaseWeapon, WeaponState);
 }
 
 #pragma endregion OVERRIDES
@@ -76,7 +76,7 @@ void AWeaponActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 #pragma region WEAPON
 
 /** Initialize */
-void AWeaponActor::Initialize()
+void ABaseWeapon::Initialize()
 {
 	if (!IsValid(WeaponDataAsset))
 	{
@@ -114,7 +114,7 @@ void AWeaponActor::Initialize()
 }
 
 /** Function bound to pickup trigger's begin overlap event */
-void AWeaponActor::OnPickupTriggerBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void ABaseWeapon::OnPickupTriggerBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (ABlasterCharacter* Character = Cast<ABlasterCharacter>(OtherActor))
 	{
@@ -123,7 +123,7 @@ void AWeaponActor::OnPickupTriggerBeginOverlap(UPrimitiveComponent* OverlappedCo
 }
 
 /** Function bound to pickup trigger's end overlap event */
-void AWeaponActor::OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void ABaseWeapon::OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (ABlasterCharacter* Character = Cast<ABlasterCharacter>(OtherActor))
 	{
@@ -131,14 +131,36 @@ void AWeaponActor::OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedComp
 	}
 }
 
+/** Fire weapon */
+void ABaseWeapon::Fire()
+{
+	ServerFire();
+}
+
+/** Server RPC for firing weapon */
+void ABaseWeapon::ServerFire_Implementation()
+{
+	MulticastFire();
+}
+
+/** Multicast RPC for firing weapon */
+void ABaseWeapon::MulticastFire_Implementation()
+{
+	if (UAnimationAsset* FireAnimation = WeaponDataAsset->WeaponData.FireAnimation)
+	{
+		USkeletalMeshComponent* WeaponSkeletalMesh = CastChecked<USkeletalMeshComponent>(WeaponMesh);
+		WeaponSkeletalMesh->PlayAnimation(FireAnimation, false);
+	}
+}
+
 /** Show/hide pickup widget */
-void AWeaponActor::TogglePickupWidget(bool bShowWidget) const
+void ABaseWeapon::TogglePickupWidget(bool bShowWidget) const
 {
 	PickupWidget->SetVisibility(bShowWidget);
 }
 
 /** Setter of WeaponState */
-void AWeaponActor::SetWeaponState(EWeaponState InWeaponState)
+void ABaseWeapon::SetWeaponState(EWeaponState InWeaponState)
 {
 	WeaponState = InWeaponState;
 	switch (WeaponState)
@@ -161,7 +183,7 @@ void AWeaponActor::SetWeaponState(EWeaponState InWeaponState)
 }
 
 /** RepNotify for WeaponState */
-void AWeaponActor::OnRep_WeaponState()
+void ABaseWeapon::OnRep_WeaponState()
 {
 	switch (WeaponState)
 	{
@@ -180,6 +202,17 @@ void AWeaponActor::OnRep_WeaponState()
 		PickupTrigger->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	}
+}
+
+/** Get Weapon's ability */
+TSubclassOf<UGameplayAbility> ABaseWeapon::GetWeaponAbility() const
+{
+	if (WeaponDataAsset)
+	{
+		return WeaponDataAsset->WeaponData.WeaponAbility;
+	}
+
+	return nullptr;
 }
 
 #pragma endregion WEAPON

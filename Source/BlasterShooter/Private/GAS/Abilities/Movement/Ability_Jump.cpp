@@ -7,25 +7,30 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
 
+// BlasterShooter
+#include "Character/BlasterCharacter.h"
+
 #pragma region OVERRIDES
 
 /** Returns true if this ability can be activated right now. Has no side effects */
 bool UAbility_Jump::CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayTagContainer* SourceTags, const FGameplayTagContainer* TargetTags, FGameplayTagContainer* OptionalRelevantTags) const
 {
-	if (const ACharacter* Character = CastChecked<ACharacter>(ActorInfo->AvatarActor.Get()))
-	{
-		return Character->CanJump();
-	}
-	
 	return Super::CanActivateAbility(Handle, ActorInfo, SourceTags, TargetTags, OptionalRelevantTags);
 }
 
 /** Actually activate ability, do not call this directly */
 void UAbility_Jump::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	ACharacter* Character = CastChecked<ACharacter>(ActorInfo->AvatarActor.Get());
+	ABlasterCharacter* Character = CastChecked<ABlasterCharacter>(ActorInfo->AvatarActor.Get());
 	Character->Jump();
 
+	// Abort ability if character is crouching when jump input is pressed
+	if (!Character->GetCharacterMovement()->IsFalling())
+	{
+		K2_EndAbility();
+		return;
+	}
+	
 	TaskWaitInputRelease = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
 	TaskWaitInputRelease->OnRelease.AddUniqueDynamic(this, &UAbility_Jump::OnJumpInputReleased);
 	TaskWaitInputRelease->ReadyForActivation();
@@ -53,14 +58,14 @@ void UAbility_Jump::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 /** Function bound to async task's input released delegate */
 void UAbility_Jump::OnJumpInputReleased(float TimeHeld)
 {
-	ACharacter* Character = CastChecked<ACharacter>(GetAvatarActorFromActorInfo());
+	ABlasterCharacter* Character = CastChecked<ABlasterCharacter>(GetAvatarActorFromActorInfo());
 	Character->StopJumping();
 }
 
 /** Function bound to character's on landed delegate */
 void UAbility_Jump::OnLanded(const FHitResult& Hit)
 {
-	ACharacter* Character = CastChecked<ACharacter>(GetAvatarActorFromActorInfo());
+	ABlasterCharacter* Character = CastChecked<ABlasterCharacter>(GetAvatarActorFromActorInfo());
 	if (Character->GetCharacterMovement()->IsFalling())
 	{
 		Character->LandedDelegate.RemoveDynamic(this, &UAbility_Jump::OnLanded);

@@ -22,6 +22,6 @@ class BLASTERSHOOTER_API UDataAsset_WeaponData : public UPrimaryDataAsset
 public:
 
 	/** Weapon's data */
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 	FWeaponData WeaponData;
 };

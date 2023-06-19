@@ -21,7 +21,7 @@
 #include "General/Components/CombatComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UI/HUD/OverheadWidget.h"
-#include "Weapon/WeaponActor.h"
+#include "Weapon/BaseWeapon.h"
 
 #pragma region INITIALIZATION
 
@@ -50,7 +50,7 @@ ABlasterCharacter::ABlasterCharacter()
 	// Configure movement
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 900.f, 0.f);
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->JumpZVelocity = 1600.f;
 	GetCharacterMovement()->GravityScale = 4.f;
@@ -65,6 +65,10 @@ ABlasterCharacter::ABlasterCharacter()
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	
 	AttributeSet = CreateDefaultSubobject<UBlasterAttributeSet>(TEXT("Attributes"));
+
+	// Replication
+	NetUpdateFrequency = 66.f;
+	MinNetUpdateFrequency = 33.f;
 }
 
 #pragma endregion INITIALIZATION
@@ -76,7 +80,8 @@ void ABlasterCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	CombatComponent->SetBlasterCharacter(this);
+	CombatComponent->WeaponEquippedDelegate.AddUniqueDynamic(this, &ABlasterCharacter::OnWeaponEquipped);
+	CombatComponent->WeaponUnequippedDelegate.AddUniqueDynamic(this, &ABlasterCharacter::OnWeaponUnequipped);
 
 	// Bind attributes' value change delegates
 	if (AbilitySystemComponent && AttributeSet)
@@ -161,6 +166,17 @@ void ABlasterCharacter::Landed(const FHitResult& Hit)
 	Super::Landed(Hit);
 }
 
+/** Make the character jump on the next update */
+void ABlasterCharacter::Jump()
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+
+	Super::Jump();
+}
+
 #pragma endregion OVERRIDES
 
 #pragma region INPUT
@@ -210,6 +226,13 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		{
 			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Aim_Triggered);
 			EnhancedInputComponent->BindAction(InputAction_Aim, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Aim_Completed);
+		}
+
+		// Firing
+		if (InputAction_Fire)
+		{
+			EnhancedInputComponent->BindAction(InputAction_Fire, ETriggerEvent::Triggered, this, &ABlasterCharacter::InputAction_Fire_Triggered);
+			EnhancedInputComponent->BindAction(InputAction_Fire, ETriggerEvent::Completed, this, &ABlasterCharacter::InputAction_Fire_Completed);
 		}
 	}
 }
@@ -306,6 +329,18 @@ void ABlasterCharacter::InputAction_Aim_Completed(const FInputActionValue& Value
 	AbilitySystemComponent->CancelAbilities(&AimTags);
 }
 
+/** Called when firing input is triggered */
+void ABlasterCharacter::InputAction_Fire_Triggered(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->TryActivateAbilitiesByTag(FireTags);
+}
+
+/** Called when firing input is completed */
+void ABlasterCharacter::InputAction_Fire_Completed(const FInputActionValue& Value)
+{
+	AbilitySystemComponent->CancelAbilities(&FireTags);
+}
+
 #pragma endregion INPUT
 
 #pragma region CORE
@@ -323,27 +358,12 @@ void ABlasterCharacter::InitializeCharacter()
 	// OverheadWidgetRef->ShowPlayerNetRole(this);
 }
 
-/** Turn in place */
-void ABlasterCharacter::TurnInPlace(float DeltaSeconds)
-{
-	UE_LOG(LogTemp, Warning, TEXT("ABlasterCharacter::TurnInPlace - AimOffsetYaw: %f"), AimOffsetYaw);
-
-	if (AimOffsetYaw > 90.f)
-	{
-		TurningInPlace = ETurningInPlace::Right;
-	}
-	else if (AimOffsetYaw < -90.f)
-	{
-		TurningInPlace = ETurningInPlace::Left;
-	}
-}
-
 #pragma endregion CORE
 
 #pragma region WEAPON
 
 /** Setter of OverlappingWeapon */
-void ABlasterCharacter::SetOverlappingWeapon(AWeaponActor* InOverlappingWeapon)
+void ABlasterCharacter::SetOverlappingWeapon(ABaseWeapon* InOverlappingWeapon)
 {
 	// Hide last overlapping weapon
 	if (OverlappingWeapon)
@@ -363,7 +383,7 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeaponActor* InOverlappingWeapon)
 }
 
 /** RepNotify for OverlappingWeapon */
-void ABlasterCharacter::OnRep_OverlappingWeapon(AWeaponActor* OldOverlappingWeapon)
+void ABlasterCharacter::OnRep_OverlappingWeapon(ABaseWeapon* OldOverlappingWeapon)
 {
 	if (OverlappingWeapon)
 	{
@@ -376,6 +396,27 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeaponActor* OldOverlappingWeap
 	}
 }
 
+/** Functionality performed when a weapon is equipped */
+void ABlasterCharacter::OnWeaponEquipped(bool bShouldAffectMovement)
+{
+	if (bShouldAffectMovement)
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		bUseControllerRotationYaw = true;
+	}
+
+	if (const ABaseWeapon* Weapon = GetEquippedWeapon())
+	{
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Weapon->GetWeaponAbility(), 1.f, INDEX_NONE, nullptr));
+	}
+}
+
+/** Functionality performed when a weapon is unequipped */
+void ABlasterCharacter::OnWeaponUnequipped(bool bShouldAffectMovement)
+{
+	
+}
+
 /** Returns whether character has a weapon equipped */
 bool ABlasterCharacter::IsWeaponEquipped() const
 {
@@ -383,7 +424,7 @@ bool ABlasterCharacter::IsWeaponEquipped() const
 }
 
 /** Returns character's currently equipped weapon */
-AWeaponActor* ABlasterCharacter::GetEquippedWeapon() const
+ABaseWeapon* ABlasterCharacter::GetEquippedWeapon() const
 {
 	return CombatComponent->GetEquippedWeapon();
 }
@@ -431,7 +472,11 @@ void ABlasterCharacter::AimOffset(float DeltaSeconds)
 		const FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		const FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, InitialAimRotation);
 		AimOffsetYaw = DeltaAimRotation.Yaw;
-		bUseControllerRotationYaw = false;
+		if (TurningInPlace == ETurningInPlace::NotTurning)
+		{
+			InterpAimOffsetYaw = AimOffsetYaw;
+		}
+		bUseControllerRotationYaw = true;
 		TurnInPlace(DeltaSeconds);
 	}
 
@@ -443,6 +488,32 @@ void ABlasterCharacter::AimOffset(float DeltaSeconds)
 		const FVector2D InRange(270.f, 360.f);
 		const FVector2D OutRange(-90.f, 0.f);
 		AimOffsetPitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AimOffsetPitch);
+	}
+}
+
+/** Turn in place */
+void ABlasterCharacter::TurnInPlace(float DeltaSeconds)
+{
+	UE_LOG(LogTemp, Warning, TEXT("ABlasterCharacter::TurnInPlace - AimOffsetYaw: %f"), AimOffsetYaw);
+
+	if (AimOffsetYaw > 90.f)
+	{
+		TurningInPlace = ETurningInPlace::Right;
+	}
+	else if (AimOffsetYaw < -90.f)
+	{
+		TurningInPlace = ETurningInPlace::Left;
+	}
+
+	if (TurningInPlace != ETurningInPlace::NotTurning)
+	{
+		InterpAimOffsetYaw = FMath::FInterpTo(InterpAimOffsetYaw, 0.f, DeltaSeconds, TurnInPlaceSpeed);
+		AimOffsetYaw = InterpAimOffsetYaw;
+		if (FMath::Abs(AimOffsetYaw) < ResetTurningAngleThreshold)
+		{
+			TurningInPlace = ETurningInPlace::NotTurning;
+			InitialAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+		}
 	}
 }
 

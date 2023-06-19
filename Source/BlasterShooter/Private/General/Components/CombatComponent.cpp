@@ -5,11 +5,10 @@
 // Unreal Engine
 #include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Character.h"
 
 // BlasterShooter
-#include "Character/BlasterCharacter.h"
-#include "Weapon/WeaponActor.h"
+#include "Weapon/BaseWeapon.h"
 
 #pragma region INITIALIZATION
 
@@ -49,9 +48,9 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 #pragma region EQUIPMENT
 
 /** Equip weapon */
-void UCombatComponent::EquipWeapon(AWeaponActor* Weapon)
+void UCombatComponent::EquipWeapon(ABaseWeapon* Weapon)
 {
-	if (!BlasterCharacter || !Weapon)
+	if (!Weapon)
 	{
 		return;
 	}
@@ -59,24 +58,27 @@ void UCombatComponent::EquipWeapon(AWeaponActor* Weapon)
 	EquippedWeapon = Weapon;
 	EquippedWeapon->SetWeaponState(EWeaponState::Equipped);
 
-	if (const USkeletalMeshSocket* WeaponSocket = BlasterCharacter->GetMesh()->GetSocketByName(WeaponSocketName))
+	if (ACharacter* Character = Cast<ACharacter>(GetOwner()))
 	{
-		WeaponSocket->AttachActor(EquippedWeapon, BlasterCharacter->GetMesh());
+		if (const USkeletalMeshSocket* WeaponSocket = Character->GetMesh()->GetSocketByName(WeaponSocketName))
+		{
+			WeaponSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		}
+		
+		EquippedWeapon->SetOwner(Character);
+		WeaponEquippedDelegate.Broadcast(true);
 	}
-	
-	EquippedWeapon->SetOwner(BlasterCharacter);
-	BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
-	BlasterCharacter->bUseControllerRotationYaw = true;
 }
 
 /** RepNotify for EquippedWeapon */
 void UCombatComponent::OnRep_EquippedWeapon()
 {
-	if (EquippedWeapon && BlasterCharacter)
+	if (!EquippedWeapon)
 	{
-		BlasterCharacter->GetCharacterMovement()->bOrientRotationToMovement = false;
-		BlasterCharacter->bUseControllerRotationYaw = true;
+		return;
 	}
+	
+	WeaponEquippedDelegate.Broadcast(true);
 }
 
 /** Set whether this component's owner is aiming */
