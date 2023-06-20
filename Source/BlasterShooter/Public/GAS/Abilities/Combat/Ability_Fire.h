@@ -6,9 +6,9 @@
 #include "CoreMinimal.h"
 
 // BlasterShooter
-#include "GAS/Abilities/BaseAbility.h"
+#include "GAS/Abilities/BlasterAbility.h"
 
-#include "Ability_Fire_Projectile.generated.h"
+#include "Ability_Fire.generated.h"
 
 // Forward declarations - Unreal Engine
 class UAbilityTask_PlayMontageAndWait;
@@ -17,7 +17,7 @@ class UAbilityTask_PlayMontageAndWait;
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UAbility_Fire_Projectile : public UBaseAbility
+class BLASTERSHOOTER_API UAbility_Fire : public UBlasterAbility
 {
 	GENERATED_BODY()
 

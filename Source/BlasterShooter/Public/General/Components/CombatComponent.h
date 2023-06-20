@@ -9,6 +9,7 @@
 #include "CombatComponent.generated.h"
 
 // Forward declarations - BlasterShooter
+class UDataAsset_WeaponData;
 class ABaseWeapon;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponEquippedSignature, bool, bShouldAffectMovement);
@@ -53,9 +54,17 @@ public:
 	UFUNCTION()
 	ABaseWeapon* GetEquippedWeapon() const { return EquippedWeapon; }
 
+	/** Get EquippedWeapon's DataAsset */
+	UFUNCTION()
+	UDataAsset_WeaponData* GetEquippedWeaponDataAsset() const;
+
 	/** Equip weapon */
 	UFUNCTION()
 	void EquipWeapon(ABaseWeapon* Weapon);
+
+	/** Fire weapon */
+	UFUNCTION()
+	void FireWeapon();
 
 	/** Returns whether this component's owner has an equipped weapon */
 	UFUNCTION()
@@ -68,16 +77,29 @@ public:
 	/** Set whether this component's owner is aiming */
 	UFUNCTION()
 	void SetIsAiming(bool bInIsAiming);
+	
+protected:
 
 	/** Server RPC for setting aiming */
 	UFUNCTION(Server, Reliable)
 	void ServerSetIsAiming(bool bInIsAiming);
+
+	/** Perform trace under crosshair (from center of the screen) */
+	void TraceUnderCrosshair(FHitResult& TraceHitResult);
 
 private:
 
 	/** RepNotify for EquippedWeapon */
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
+
+	/** Server RPC for firing weapon */
+	UFUNCTION(Server, Reliable)
+	void ServerFireWeapon(const FVector_NetQuantize& HitTarget);
+	
+	/** Multicast RPC for firing weapon */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFireWeapon(const FVector_NetQuantize& HitTarget);
 
 public:
 

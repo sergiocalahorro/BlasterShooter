@@ -6,7 +6,7 @@
 #include "CoreMinimal.h"
 
 // BlasterShooter
-#include "GAS/Abilities/BaseAbility.h"
+#include "GAS/Abilities/BlasterAbility.h"
 
 #include "Ability_Aim.generated.h"
 
@@ -17,7 +17,7 @@ class UCameraModifier;
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UAbility_Aim : public UBaseAbility
+class BLASTERSHOOTER_API UAbility_Aim : public UBlasterAbility
 {
 	GENERATED_BODY()
 

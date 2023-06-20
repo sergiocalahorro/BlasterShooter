@@ -4,14 +4,20 @@
 
 // Unreal Engine
 #include "Components/BoxComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+
+// BlasterShooter
+#include "General/DataAssets/DataAsset_ProjectileData.h"
+#include "General/Structs/Data/ProjectileData.h"
 
 #pragma region INITIALIZATION
 
 /** Sets default values for this actor's properties */
 ABaseProjectile::ABaseProjectile()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 
 	// Setup hierarchy
 	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
@@ -21,6 +27,9 @@ ABaseProjectile::ABaseProjectile()
 	BoxCollision->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	BoxCollision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	RootComponent = BoxCollision;
+
+	// Setup components
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 }
 
 #pragma endregion INITIALIZATION
@@ -40,3 +49,39 @@ void ABaseProjectile::Tick(float DeltaTime)
 }
 
 #pragma endregion OVERRIDES
+
+#pragma region PROJECTILE
+
+/** Initialize projectile's values */
+void ABaseProjectile::InitializeProjectile(const UDataAsset_ProjectileData* ProjectileDataAsset)
+{
+	if (!ProjectileDataAsset)
+	{
+		return;
+	}
+	
+	const FProjectileData ProjectileData = ProjectileDataAsset->ProjectileData;
+
+	if (ProjectileData.Tracer)
+	{
+		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
+			ProjectileData.Tracer,
+			BoxCollision,
+			NAME_None,
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition
+		);
+	}
+
+	// Projectile movement
+	ProjectileMovementComponent->InitialSpeed = ProjectileData.InitialSpeed;
+	ProjectileMovementComponent->MaxSpeed = ProjectileData.MaxSpeed;
+	ProjectileMovementComponent->ProjectileGravityScale = ProjectileData.GravityScale;
+	ProjectileMovementComponent->bInitialVelocityInLocalSpace = ProjectileData.bInitialVelocityInLocalSpace;
+	ProjectileMovementComponent->bRotationFollowsVelocity = ProjectileData.bRotationFollowsVelocity;
+	ProjectileMovementComponent->bShouldBounce = ProjectileData.bShouldBounce;
+	ProjectileMovementComponent->Bounciness = ProjectileData.Bounciness;
+}
+
+#pragma endregion PROJECTILE

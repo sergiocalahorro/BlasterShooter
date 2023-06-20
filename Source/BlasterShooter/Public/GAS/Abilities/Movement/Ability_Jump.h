@@ -6,7 +6,7 @@
 #include "CoreMinimal.h"
 
 // BlasterShooter
-#include "GAS/Abilities/BaseAbility.h"
+#include "GAS/Abilities/BlasterAbility.h"
 
 #include "Ability_Jump.generated.h"
 
@@ -17,7 +17,7 @@ class UAbilityTask_WaitInputRelease;
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UAbility_Jump : public UBaseAbility
+class BLASTERSHOOTER_API UAbility_Jump : public UBlasterAbility
 {
 	GENERATED_BODY()
 

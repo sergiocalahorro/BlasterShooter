@@ -1,13 +1,13 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "GAS/Abilities/BaseAbility.h"
+#include "GAS/Abilities/BlasterAbility.h"
 
 #include "AbilitySystemComponent.h"
 
 #pragma region OVERRIDES
 
 /** Actually activate ability, do not call this directly */
-void UBaseAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UBlasterAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	ApplyEffects(OngoingEffectsAppliedOnStart);
 	ApplyEffects(PermanentEffectsAppliedOnStart);
@@ -16,7 +16,7 @@ void UBaseAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 }
 
 /** Native function, called if an ability ends normally or abnormally. If bReplicate is set to true, try to replicate the ending to the client/server */
-void UBaseAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+void UBlasterAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	RemoveEffects();
 	
@@ -28,7 +28,7 @@ void UBaseAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 #pragma region ABILITY
 
 /** Apply list of effects */
-void UBaseAbility::ApplyEffects(const TArray<TSubclassOf<UGameplayEffect>>& Effects, bool bArePermanent)
+void UBlasterAbility::ApplyEffects(const TArray<TSubclassOf<UGameplayEffect>>& Effects, bool bArePermanent)
 {
 	if (Effects.IsEmpty())
 	{
@@ -55,7 +55,7 @@ void UBaseAbility::ApplyEffects(const TArray<TSubclassOf<UGameplayEffect>>& Effe
 }
 
 /** Remove active effects */
-void UBaseAbility::RemoveEffects()
+void UBlasterAbility::RemoveEffects()
 {
 	if (UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponentFromActorInfo())
 	{

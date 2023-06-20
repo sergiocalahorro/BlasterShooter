@@ -6,13 +6,13 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 
-#include "BaseAbility.generated.h"
+#include "BlasterAbility.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UBaseAbility : public UGameplayAbility
+class BLASTERSHOOTER_API UBlasterAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 

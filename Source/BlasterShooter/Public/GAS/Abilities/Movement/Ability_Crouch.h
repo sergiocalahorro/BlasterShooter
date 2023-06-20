@@ -6,7 +6,7 @@
 #include "CoreMinimal.h"
 
 // BlasterShooter
-#include "GAS/Abilities/BaseAbility.h"
+#include "GAS/Abilities/BlasterAbility.h"
 
 #include "Ability_Crouch.generated.h"
 
@@ -14,7 +14,7 @@
  * 
  */
 UCLASS()
-class BLASTERSHOOTER_API UAbility_Crouch : public UBaseAbility
+class BLASTERSHOOTER_API UAbility_Crouch : public UBlasterAbility
 {
 	GENERATED_BODY()
 

@@ -96,6 +96,10 @@ public:
 	UFUNCTION()
 	UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
+	/** Getter of CombatComponent */
+	UFUNCTION()
+	UCombatComponent* GetCombatComponent() const { return CombatComponent; }
+
 private:
 
 	/** Camera's spring arm */

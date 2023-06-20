@@ -56,7 +56,7 @@ public:
 
 	/** Fire weapon */
 	UFUNCTION()
-	void Fire();
+	virtual void Fire(const FVector& HitTarget);
 
 	/** Show/hide pickup widget */
 	UFUNCTION()
@@ -64,7 +64,7 @@ public:
 
 	/** Getter of WeaponState */
 	UFUNCTION()
-	EWeaponState GetWeaponState() const { return WeaponState;	}
+	EWeaponState GetWeaponState() const { return WeaponState; }
 
 	/** Setter of WeaponState */
 	UFUNCTION()
@@ -72,7 +72,7 @@ public:
 	
 	/** Getter of WeaponDataAsset */
 	UFUNCTION()
-	UDataAsset_WeaponData* GetWeaponData() const { return WeaponDataAsset; }
+	UDataAsset_WeaponData* GetWeaponDataAsset() const { return WeaponDataAsset; }
 
 	/** Get Weapon's skeletal mesh */
 	UFUNCTION()
@@ -95,14 +95,6 @@ protected:
 	/** Function bound to pickup trigger's end overlap event */
 	UFUNCTION()
 	void OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	/** Server RPC for firing weapon */
-	UFUNCTION(Server, Reliable)
-	void ServerFire();
-
-	/** Multicast RPC for firing weapon */
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastFire();
 	
 private:
 
@@ -110,7 +102,7 @@ private:
 	UFUNCTION()
 	void OnRep_WeaponState();
 	
-private:
+protected:
 
 	/** Weapon's data */
 	UPROPERTY(EditAnywhere, Category = "AA|Weapon")

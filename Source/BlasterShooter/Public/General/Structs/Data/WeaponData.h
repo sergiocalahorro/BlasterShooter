@@ -10,6 +10,7 @@
 
 #include "WeaponData.generated.h"
 
+class ABaseProjectile;
 // Forward declarations - Unreal Engine
 class UNiagaraSystem;
 class UGameplayAbility;
@@ -80,9 +81,13 @@ public:
 	
 	/** Shooting distance */
 	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.f, ClampMin = 0.f, EditCondition = "WeaponType == EWeaponType::Trace", EditConditionHides, Units = "cm"))
-	float ShootingDistance = 10000.f;
+	float ShootingDistance = 80000.f;
 
-	/** Projectile's spawn offset */
-	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.f, ClampMin = 0.f, EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides, Units = "cm"))
-	float SpawnOffset = 150.f;
+	/** Class of projectile to spawn */
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides))
+	TSubclassOf<ABaseProjectile> ProjectileClass;
+
+	/** Muzzle flash's socket name (used for spawning the projectile from this socket's location) */
+	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides))
+	FName MuzzleFlashSocketName = FName("MuzzleFlash");
 };

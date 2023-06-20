@@ -13,13 +13,13 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // BlasterShooter
 #include "General/DataAssets/DataAsset_CharacterData.h"
 #include "GAS/AbilitySystem/BlasterAbilitySystemComponent.h"
 #include "GAS/Attributes/BlasterAttributeSet.h"
 #include "General/Components/CombatComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 #include "UI/HUD/OverheadWidget.h"
 #include "Weapon/BaseWeapon.h"
 
@@ -34,7 +34,8 @@ ABlasterCharacter::ABlasterCharacter()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	CameraBoom->SetupAttachment(GetMesh());
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
-	CameraBoom->TargetArmLength = 600.f;
+	CameraBoom->TargetArmLength = 450.f;
+	CameraBoom->SocketOffset = FVector(0.f, 75.f, 75.f);
 	CameraBoom->bUsePawnControlRotation = true;
 	
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));

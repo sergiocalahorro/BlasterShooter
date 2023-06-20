@@ -6,6 +6,7 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
 
 // BlasterShooter
 #include "Weapon/BaseWeapon.h"
@@ -81,6 +82,26 @@ void UCombatComponent::OnRep_EquippedWeapon()
 	WeaponEquippedDelegate.Broadcast(true);
 }
 
+/** Fire weapon */
+void UCombatComponent::FireWeapon()
+{
+	FHitResult TraceHitResult;
+	TraceUnderCrosshair(TraceHitResult);
+	ServerFireWeapon(TraceHitResult.ImpactPoint);
+}
+
+/** Server RPC for firing weapon */
+void UCombatComponent::ServerFireWeapon_Implementation(const FVector_NetQuantize& HitTarget)
+{
+	MulticastFireWeapon(HitTarget);
+}
+	
+/** Multicast RPC for firing weapon */
+void UCombatComponent::MulticastFireWeapon_Implementation(const FVector_NetQuantize& HitTarget)
+{
+	EquippedWeapon->Fire(HitTarget);
+}
+
 /** Set whether this component's owner is aiming */
 void UCombatComponent::SetIsAiming(bool bInIsAiming)
 {
@@ -92,6 +113,67 @@ void UCombatComponent::SetIsAiming(bool bInIsAiming)
 void UCombatComponent::ServerSetIsAiming_Implementation(bool bInIsAiming)
 {
 	bIsAiming = bInIsAiming; 
+}
+
+/** Get EquippedWeapon's DataAsset */
+UDataAsset_WeaponData* UCombatComponent::GetEquippedWeaponDataAsset() const
+{
+	return EquippedWeapon->GetWeaponDataAsset();
+}
+
+/** Perform trace under crosshair (from center of the screen) */
+void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
+{
+	if (!EquippedWeapon)
+	{
+		return;
+	}
+	
+	FVector2D ViewportSize;
+	if (GEngine && GEngine->GameViewport)
+	{
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
+	}
+
+	const FVector2D CrosshairScreenLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+
+	FVector CrosshairWorldLocation;
+	FVector CrosshairWorldDirection;
+
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		CrosshairScreenLocation,
+		CrosshairWorldLocation,
+		CrosshairWorldDirection
+	);
+
+	if (!bScreenToWorld)
+	{
+		return;
+	}
+	
+	if (const UDataAsset_WeaponData* WeaponDataAsset = EquippedWeapon->GetWeaponDataAsset())
+	{
+		const FWeaponData WeaponData = WeaponDataAsset->WeaponData;
+		const FVector TraceStart = CrosshairWorldLocation;
+		const FVector TraceEnd = TraceStart + CrosshairWorldDirection * WeaponData.ShootingDistance;
+		
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActors(TArray<AActor*>{ GetOwner(), EquippedWeapon });
+
+		GetWorld()->LineTraceSingleByChannel(
+			TraceHitResult,
+			TraceStart,
+			TraceEnd,
+			UEngineTypes::ConvertToCollisionChannel(WeaponData.WeaponTraceChannel),
+			QueryParams
+		);
+
+		if (!TraceHitResult.bBlockingHit)
+		{
+			TraceHitResult.ImpactPoint = TraceEnd;
+		}
+	}
 }
 
 #pragma endregion EQUIPMENT

@@ -5,10 +5,16 @@
 // Unreal Engine
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "General/DataAssets/DataAsset_ProjectileData.h"
 
 #include "BaseProjectile.generated.h"
 
+// Forward declarations - Unreal Engine
 class UBoxComponent;
+class UProjectileMovementComponent;
+
+// Forward declarations - BlasterShooter
+class UDataAsset_ProjectileData;
 
 UCLASS()
 class BLASTERSHOOTER_API ABaseProjectile : public AActor
@@ -40,10 +46,29 @@ protected:
 
 #pragma region COMPONENTS
 
+private:
+
 	/** Box collision */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Components")
 	TObjectPtr<UBoxComponent> BoxCollision;
 
+	/** Projectile's movement component */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Components")
+	TObjectPtr<UProjectileMovementComponent> ProjectileMovementComponent;
+
+	/** Tracer component */
+	UPROPERTY()
+	TObjectPtr<UParticleSystemComponent> TracerComponent;
+
 #pragma endregion COMPONENTS
+
+#pragma region PROJECTILE
+
+public:
+
+	/** Initialize projectile's values */
+	void InitializeProjectile(const UDataAsset_ProjectileData* ProjectileDataAsset);
+
+#pragma endregion PROJECTILE
 	
 };

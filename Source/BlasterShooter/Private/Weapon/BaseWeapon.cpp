@@ -132,25 +132,10 @@ void ABaseWeapon::OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedCompo
 }
 
 /** Fire weapon */
-void ABaseWeapon::Fire()
+void ABaseWeapon::Fire(const FVector& HitTarget)
 {
-	ServerFire();
-}
-
-/** Server RPC for firing weapon */
-void ABaseWeapon::ServerFire_Implementation()
-{
-	MulticastFire();
-}
-
-/** Multicast RPC for firing weapon */
-void ABaseWeapon::MulticastFire_Implementation()
-{
-	if (UAnimationAsset* FireAnimation = WeaponDataAsset->WeaponData.FireAnimation)
-	{
-		USkeletalMeshComponent* WeaponSkeletalMesh = CastChecked<USkeletalMeshComponent>(WeaponMesh);
-		WeaponSkeletalMesh->PlayAnimation(FireAnimation, false);
-	}
+	USkeletalMeshComponent* WeaponSkeletalMesh = CastChecked<USkeletalMeshComponent>(WeaponMesh);
+	WeaponSkeletalMesh->PlayAnimation(WeaponDataAsset->WeaponData.FireAnimation, false);
 }
 
 /** Show/hide pickup widget */

@@ -21,6 +21,10 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UStaticMesh> StaticMesh;
 
+	/** Tracer particles for this projectile */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UParticleSystem> Tracer;
+
 	/** Base damage value */
 	UPROPERTY(EditDefaultsOnly)
 	float BaseDamage;
@@ -42,20 +46,20 @@ public:
 	TEnumAsByte<ETraceTypeQuery> RadialDamageTraceType;
 
 	/** Initial speed */
-	UPROPERTY(EditDefaultsOnly)
-	float InitialSpeed = 3000.f;
+	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.f, ClampMin = 0.f, ForceUnits = "cm/s"))
+	float InitialSpeed = 10000.f;
 
 	/** Maximum speed */
-	UPROPERTY(EditDefaultsOnly)
-	float MaxSpeed = 3000.f;
+	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.f, ClampMin = 0.f, ForceUnits = "cm/s"))
+	float MaxSpeed = 10000.f;
 
 	/** Gravity scale */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.f, ClampMin = 0.f))
 	float GravityScale = 1.f;
 
 	/** Whether initial velocity is set in local space */
 	UPROPERTY(EditDefaultsOnly)
-	bool bInitialVelocityInLocalSpace = false;
+	bool bInitialVelocityInLocalSpace = true;
 
 	/** Whether rotation follows velocity */
 	UPROPERTY(EditDefaultsOnly)
