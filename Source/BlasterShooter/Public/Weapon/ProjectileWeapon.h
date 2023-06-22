@@ -28,7 +28,7 @@ public:
 protected:
 
 	/** Projectile's data asset */
-	UPROPERTY(EditDefaultsOnly, Category = "AA|Weapon|Projectile")
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Weapon")
 	TObjectPtr<UDataAsset_ProjectileData> ProjectileDataAsset;
 
 #pragma endregion WEAPON

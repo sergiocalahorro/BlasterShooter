@@ -6,6 +6,7 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 // BlasterShooter
 #include "General/DataAssets/DataAsset_ProjectileData.h"
@@ -36,6 +37,17 @@ ABaseProjectile::ABaseProjectile()
 
 #pragma region OVERRIDES
 
+/** Allow actors to initialize themselves on the C++ side after all of their components have been initialized, only called during gameplay */
+void ABaseProjectile::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	
+	if (HasAuthority())
+	{
+		BoxCollision->OnComponentHit.AddUniqueDynamic(this, &ABaseProjectile::OnHit);
+	}
+}
+
 /** Called when the game starts or when spawned */
 void ABaseProjectile::BeginPlay()
 {
@@ -46,6 +58,22 @@ void ABaseProjectile::BeginPlay()
 void ABaseProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+/** Called when this actor is explicitly being destroyed during gameplay or in the editor, not called during level streaming or gameplay ending */
+void ABaseProjectile::Destroyed()
+{
+	if (ProjectileData.ImpactParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ProjectileData.ImpactParticles, GetActorTransform());
+	}
+
+	if (ProjectileData.ImpactSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ProjectileData.ImpactSound, GetActorLocation());
+	}
+
+	Super::Destroyed();
 }
 
 #pragma endregion OVERRIDES
@@ -60,12 +88,12 @@ void ABaseProjectile::InitializeProjectile(const UDataAsset_ProjectileData* Proj
 		return;
 	}
 	
-	const FProjectileData ProjectileData = ProjectileDataAsset->ProjectileData;
+	ProjectileData = ProjectileDataAsset->ProjectileData;
 
-	if (ProjectileData.Tracer)
+	if (ProjectileData.TracerParticles)
 	{
 		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
-			ProjectileData.Tracer,
+			ProjectileData.TracerParticles,
 			BoxCollision,
 			NAME_None,
 			GetActorLocation(),
@@ -82,6 +110,12 @@ void ABaseProjectile::InitializeProjectile(const UDataAsset_ProjectileData* Proj
 	ProjectileMovementComponent->bRotationFollowsVelocity = ProjectileData.bRotationFollowsVelocity;
 	ProjectileMovementComponent->bShouldBounce = ProjectileData.bShouldBounce;
 	ProjectileMovementComponent->Bounciness = ProjectileData.Bounciness;
+}
+
+/** Handle projectile's hit */
+void ABaseProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	Destroy();
 }
 
 #pragma endregion PROJECTILE

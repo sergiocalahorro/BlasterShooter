@@ -9,6 +9,7 @@
 
 // Forward declarations - Unreal Engine
 class UGameplayEffect;
+class USoundCue;
 
 USTRUCT(BlueprintType)
 struct FProjectileData
@@ -21,9 +22,17 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UStaticMesh> StaticMesh;
 
-	/** Tracer particles for this projectile */
+	/** Particles attached to this projectile */
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UParticleSystem> Tracer;
+	TObjectPtr<UParticleSystem> TracerParticles;
+
+	/** Particles spawned when the projectile impacts on something */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UParticleSystem> ImpactParticles;
+
+	/** Sound played when the projectile impacts on something */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USoundCue> ImpactSound;
 
 	/** Base damage value */
 	UPROPERTY(EditDefaultsOnly)

@@ -37,7 +37,13 @@ public:
 	/** Called every frame */
 	virtual void Tick(float DeltaTime) override;
 	
+	/** Called when this actor is explicitly being destroyed during gameplay or in the editor, not called during level streaming or gameplay ending */
+	virtual void Destroyed() override;
+	
 protected:
+	
+	/** Allow actors to initialize themselves on the C++ side after all of their components have been initialized, only called during gameplay */
+	virtual void PostInitializeComponents() override;
 	
 	/** Called when the game starts or when spawned */
 	virtual void BeginPlay() override;
@@ -69,6 +75,18 @@ public:
 	/** Initialize projectile's values */
 	void InitializeProjectile(const UDataAsset_ProjectileData* ProjectileDataAsset);
 
+protected:
+
+	/** Handle projectile's hit */
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+private:
+
+	/** Projectile's data */
+	UPROPERTY()
+	FProjectileData ProjectileData;
+	
 #pragma endregion PROJECTILE
 	
 };

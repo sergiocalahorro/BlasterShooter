@@ -10,11 +10,14 @@
 
 #include "WeaponData.generated.h"
 
-class ABaseProjectile;
 // Forward declarations - Unreal Engine
 class UNiagaraSystem;
 class UGameplayAbility;
 class UGameplayEffect;
+
+// Forward declarations - BlasterShooter
+class ABaseProjectile;
+class ABaseCasing;
 
 USTRUCT(BlueprintType)
 struct FWeaponData
@@ -38,11 +41,7 @@ public:
 	/** Character's animation montage to play when firing with this weapon */
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAnimMontage> AttackMontage;
-
-	/** Weapon's animation to play when character is firing */
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UAnimationAsset> FireAnimation;
-
+	
 	/** Montage's section name when firing from the hip */
 	UPROPERTY(EditDefaultsOnly)
 	FName AttackMontageHipSectionName;
@@ -50,14 +49,26 @@ public:
 	/** Montage's section name when firing while aiming */
 	UPROPERTY(EditDefaultsOnly)
 	FName AttackMontageAimSectionName;
-
+	
 	/** Weapon's attack sound */
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<USoundBase> AttackSound;
 
 	/** Weapon's attack VFX */
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UNiagaraSystem> AttackVFX;
+	TObjectPtr<UNiagaraSystem> AttackVfx;
+
+	/** Weapon's animation to play when character is firing */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UAnimationAsset> FireAnimation;
+	
+	/** Class of casing to spawn when the weapon is fired */
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<ABaseCasing> CasingClass;
+
+	/** Ammo eject's socket name (used for spawning the casing at this socket's location) */
+	UPROPERTY(EditDefaultsOnly)
+	FName AmmoEjectSocketName = FName("AmmoEject");
 
 	/** Ability granted by this weapon */
 	UPROPERTY(EditDefaultsOnly)
@@ -87,7 +98,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides))
 	TSubclassOf<ABaseProjectile> ProjectileClass;
 
-	/** Muzzle flash's socket name (used for spawning the projectile from this socket's location) */
+	/** Muzzle flash's socket name (used for spawning the projectile at this socket's location) */
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides))
 	FName MuzzleFlashSocketName = FName("MuzzleFlash");
 };

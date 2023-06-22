@@ -99,6 +99,11 @@ void UCombatComponent::ServerFireWeapon_Implementation(const FVector_NetQuantize
 /** Multicast RPC for firing weapon */
 void UCombatComponent::MulticastFireWeapon_Implementation(const FVector_NetQuantize& HitTarget)
 {
+	if (!EquippedWeapon)
+	{
+		return;
+	}
+	
 	EquippedWeapon->Fire(HitTarget);
 }
 
@@ -124,11 +129,6 @@ UDataAsset_WeaponData* UCombatComponent::GetEquippedWeaponDataAsset() const
 /** Perform trace under crosshair (from center of the screen) */
 void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 {
-	if (!EquippedWeapon)
-	{
-		return;
-	}
-	
 	FVector2D ViewportSize;
 	if (GEngine && GEngine->GameViewport)
 	{

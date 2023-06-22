@@ -9,7 +9,10 @@
 
 // Forward declarations - BlasterShooter
 #include "Character/BlasterCharacter.h"
+#include "Engine/SkeletalMeshSocket.h"
+#include "General/DataAssets/DataAsset_CasingData.h"
 #include "General/DataAssets/DataAsset_WeaponData.h"
+#include "Weapon/Casings/BaseCasing.h"
 
 #pragma region INITIALIZATION
 
@@ -134,8 +137,34 @@ void ABaseWeapon::OnPickupTriggerEndOverlap(UPrimitiveComponent* OverlappedCompo
 /** Fire weapon */
 void ABaseWeapon::Fire(const FVector& HitTarget)
 {
-	USkeletalMeshComponent* WeaponSkeletalMesh = CastChecked<USkeletalMeshComponent>(WeaponMesh);
-	WeaponSkeletalMesh->PlayAnimation(WeaponDataAsset->WeaponData.FireAnimation, false);
+	// Play weapon's mesh animation
+	if (WeaponDataAsset->WeaponData.FireAnimation)
+	{
+		USkeletalMeshComponent* WeaponSkeletalMesh = CastChecked<USkeletalMeshComponent>(WeaponMesh);
+		WeaponSkeletalMesh->PlayAnimation(WeaponDataAsset->WeaponData.FireAnimation, false);
+	}
+
+	// Spawn casing ejected
+	if (const USkeletalMeshComponent* WeaponSkeletalMesh = GetWeaponSkeletalMesh())
+	{
+		if (const USkeletalMeshSocket* AmmoEjectSocket = WeaponSkeletalMesh->GetSocketByName(WeaponDataAsset->WeaponData.AmmoEjectSocketName))
+		{
+			if (WeaponDataAsset->WeaponData.CasingClass)
+			{
+				FTransform CasingSpawnTransform = AmmoEjectSocket->GetSocketTransform(WeaponSkeletalMesh);
+				const FRotator RandomSpawnRotation = CasingSpawnTransform.GetRotation().Rotator() +
+													 FRotator(FMath::RandRange(CasingDataAsset->CasingData.MinSpawnAngleOffset, CasingDataAsset->CasingData.MaxSpawnAngleOffset),
+															  FMath::RandRange(CasingDataAsset->CasingData.MinSpawnAngleOffset, CasingDataAsset->CasingData.MaxSpawnAngleOffset),
+															  0.f);
+				CasingSpawnTransform.SetRotation(RandomSpawnRotation.Quaternion());
+				if (ABaseCasing* Casing = GetWorld()->SpawnActorDeferred<ABaseCasing>(WeaponDataAsset->WeaponData.CasingClass, CasingSpawnTransform, this, nullptr))
+				{
+					Casing->InitializeCasing(CasingDataAsset);
+					Casing->FinishSpawning(CasingSpawnTransform);
+				}
+			}
+		}
+	}
 }
 
 /** Show/hide pickup widget */

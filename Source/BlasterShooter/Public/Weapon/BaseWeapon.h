@@ -10,13 +10,14 @@
 
 #include "BaseWeapon.generated.h"
 
-class UGameplayAbility;
 // Forward declarations - Unreal Engine
 class USphereComponent;
 class UWidgetComponent;
+class UGameplayAbility;
 
 // Forward declarations - BlasterShooter
 class UDataAsset_WeaponData;
+class UDataAsset_CasingData;
 
 UCLASS()
 class BLASTERSHOOTER_API ABaseWeapon : public AActor
@@ -49,6 +50,24 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 #pragma endregion OVERRIDES
+
+#pragma region COMPONENTS
+
+protected:
+		
+	/** Weapon's mesh */
+	UPROPERTY()
+	TObjectPtr<UMeshComponent> WeaponMesh;
+	
+	/** Pick up sphere */
+	UPROPERTY(VisibleDefaultsOnly, Category = "AA|Weapon")
+	TObjectPtr<USphereComponent> PickupTrigger;
+
+	/** Pick Up widget */
+	UPROPERTY(VisibleDefaultsOnly, Category = "AA|Weapon")
+	TObjectPtr<UWidgetComponent> PickupWidget;
+
+#pragma endregion COMPONENTS
 
 #pragma region WEAPON
 
@@ -104,25 +123,17 @@ private:
 	
 protected:
 
-	/** Weapon's data */
-	UPROPERTY(EditAnywhere, Category = "AA|Weapon")
-	TObjectPtr<UDataAsset_WeaponData> WeaponDataAsset;
-
 	/** Current weapon's state */
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_WeaponState, Category = "AA|Weapon")
 	EWeaponState WeaponState = EWeaponState::None;
-	
-	/** Weapon's mesh */
-	UPROPERTY()
-	TObjectPtr<UMeshComponent> WeaponMesh;
-	
-	/** Pick up sphere */
-	UPROPERTY(VisibleDefaultsOnly, Category = "AA|Weapon")
-	TObjectPtr<USphereComponent> PickupTrigger;
 
-	/** Pick Up widget */
-	UPROPERTY(VisibleDefaultsOnly, Category = "AA|Weapon")
-	TObjectPtr<UWidgetComponent> PickupWidget;
+	/** Weapon's data asset */
+	UPROPERTY(EditAnywhere, Category = "AA|Weapon")
+	TObjectPtr<UDataAsset_WeaponData> WeaponDataAsset;
+
+	/** Casing's data asset */
+	UPROPERTY(EditAnywhere, Category = "AA|Weapon")
+	TObjectPtr<UDataAsset_CasingData> CasingDataAsset;
 
 #pragma endregion WEAPON
 
