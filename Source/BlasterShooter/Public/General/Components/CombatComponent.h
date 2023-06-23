@@ -6,14 +6,19 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 
+// BlasterShooter
+#include "General/Structs/HUD/HUDPackage.h"
+
 #include "CombatComponent.generated.h"
 
 // Forward declarations - BlasterShooter
 class UDataAsset_WeaponData;
 class ABaseWeapon;
+class ABlasterCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponEquippedSignature, bool, bShouldAffectMovement);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponUnequippedSignature, bool, bShouldAffectMovement);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCrosshairsUpdateSignature, const FHUDPackage&, HUDPackage);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BLASTERSHOOTER_API UCombatComponent : public UActorComponent
@@ -104,11 +109,9 @@ private:
 public:
 
 	/** Delegate called when weapon is equipped */
-	UPROPERTY(BlueprintAssignable)
 	FWeaponEquippedSignature WeaponEquippedDelegate;
 
 	/** Delegate called when weapon is unequipped */
-	UPROPERTY(BlueprintAssignable)
 	FWeaponUnequippedSignature WeaponUnequippedDelegate;
 	
 protected:
@@ -122,12 +125,51 @@ private:
 	/** Currently equipped weapon */
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	TObjectPtr<ABaseWeapon> EquippedWeapon;
+
+	/** Character's reference */
+	UPROPERTY()
+	TObjectPtr<ABlasterCharacter> BlasterCharacter;
 	
 	/** Whether owner of this component is aiming */
 	UPROPERTY(Replicated)
 	bool bIsAiming;
-
+	
 #pragma endregion EQUIPMENT
+
+#pragma region HUD
+
+private:
+	
+	/** Update HUD crosshairs */
+	void UpdateHUDCrossHairs(float DeltaTime);
+
+public:
+	
+	/** Delegate called when crosshairs are updated */
+	FCrosshairsUpdateSignature CrosshairsUpdateDelegate;
+
+private:
+
+	/** Crosshair's min spread in air factor */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
+	float CrosshairMinSpreadInAirFactor = 0.f;
+
+	/** Crosshair's max spread in air factor */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
+	float CrosshairMaxSpreadInAirFactor = 2.25f;
+
+	/** Crosshair's spread in air min interp speed */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
+	float CrosshairSpreadInAirMinSpeed = 2.25f;
+	
+	/** Crosshair's spread in air max interp speed */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
+	float CrosshairSpreadInAirMaxSpeed = 30.f;
+	
+	/** Crosshair's current spread in air factor */
+	float CrosshairSpreadInAirFactor;
+
+#pragma endregion HUD
 	
 };
  

@@ -5,6 +5,8 @@
 // Unreal Engine
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+
+// BlasterShooter
 #include "General/DataAssets/DataAsset_WeaponData.h"
 #include "General/Enums/Weapon/WeaponState.h"
 
@@ -92,6 +94,10 @@ public:
 	/** Getter of WeaponDataAsset */
 	UFUNCTION()
 	UDataAsset_WeaponData* GetWeaponDataAsset() const { return WeaponDataAsset; }
+	
+	/** Getter of WeaponData */
+	UFUNCTION()
+	FWeaponData GetWeaponData() const { return WeaponDataAsset->WeaponData; }
 
 	/** Get Weapon's skeletal mesh */
 	UFUNCTION()

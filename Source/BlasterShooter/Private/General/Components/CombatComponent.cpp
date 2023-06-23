@@ -6,9 +6,12 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // BlasterShooter
+#include "Character/BlasterCharacter.h"
+#include "General/Structs/HUD/HUDPackage.h"
 #include "Weapon/BaseWeapon.h"
 
 #pragma region INITIALIZATION
@@ -16,7 +19,7 @@
 /** Sets default values for this component's properties */
 UCombatComponent::UCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 #pragma endregion INITIALIZATION
@@ -27,12 +30,15 @@ UCombatComponent::UCombatComponent()
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	BlasterCharacter = Cast<ABlasterCharacter>(GetOwner());
 }
 
 /** Called every frame */
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	UpdateHUDCrossHairs(DeltaTime);
 }
 
 /** Returns properties that are replicated for the lifetime of the actor channel */
@@ -174,6 +180,42 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 			TraceHitResult.ImpactPoint = TraceEnd;
 		}
 	}
+}
+
+/** Update HUD crosshairs */
+void UCombatComponent::UpdateHUDCrossHairs(float DeltaTime)
+{
+	FHUDPackage HUDPackage;
+	if (EquippedWeapon)
+	{
+		HUDPackage.CrosshairsCenter = EquippedWeapon->GetWeaponData().CrosshairsCenter;
+		HUDPackage.CrosshairsLeft = EquippedWeapon->GetWeaponData().CrosshairsLeft;
+		HUDPackage.CrosshairsRight = EquippedWeapon->GetWeaponData().CrosshairsRight;
+		HUDPackage.CrosshairsTop = EquippedWeapon->GetWeaponData().CrosshairsTop;
+		HUDPackage.CrosshairsBottom = EquippedWeapon->GetWeaponData().CrosshairsBottom;
+	}
+
+	// Calculate crosshair spread
+	if (BlasterCharacter)
+	{
+		const FVector2D WalkSpeedRange(0.f, BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed);
+		const FVector2D VelocityMultiplierRange(0.f, 1.f);
+		const FVector Velocity = BlasterCharacter->GetVelocity();
+		const float SpreadVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size2D());
+
+		if (BlasterCharacter->GetCharacterMovement()->IsFalling())
+		{
+			CrosshairSpreadInAirFactor = FMath::FInterpTo(CrosshairSpreadInAirFactor, CrosshairMaxSpreadInAirFactor, DeltaTime, CrosshairSpreadInAirMinSpeed);
+		}
+		else
+		{
+			CrosshairSpreadInAirFactor = FMath::FInterpTo(CrosshairSpreadInAirFactor, CrosshairMinSpreadInAirFactor, DeltaTime, CrosshairSpreadInAirMaxSpeed);
+		}
+
+		HUDPackage.CrosshairSpread = SpreadVelocityFactor + CrosshairSpreadInAirFactor;
+	}
+	
+	CrosshairsUpdateDelegate.Broadcast(HUDPackage);
 }
 
 #pragma endregion EQUIPMENT

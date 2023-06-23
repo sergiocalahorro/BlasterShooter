@@ -14,6 +14,7 @@
 class UNiagaraSystem;
 class UGameplayAbility;
 class UGameplayEffect;
+class UTexture2D;
 
 // Forward declarations - BlasterShooter
 class ABaseProjectile;
@@ -101,4 +102,24 @@ public:
 	/** Muzzle flash's socket name (used for spawning the projectile at this socket's location) */
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides))
 	FName MuzzleFlashSocketName = FName("MuzzleFlash");
+
+	/** Texture for center crosshairs */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> CrosshairsCenter;
+
+	/** Texture for left crosshairs */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> CrosshairsLeft;
+
+	/** Texture for right crosshairs */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> CrosshairsRight;
+
+	/** Texture for top crosshairs */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> CrosshairsTop;
+
+	/** Texture for bottom crosshairs */
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> CrosshairsBottom;
 };
