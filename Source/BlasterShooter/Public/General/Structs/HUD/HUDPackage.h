@@ -39,4 +39,7 @@ public:
 
 	/** Amount of spread for crosshairs */
 	float CrosshairSpread;
+
+	/** Crosshairs' color */
+	FLinearColor CrosshairColor;
 };

@@ -3,6 +3,7 @@
 #include "GAS/Abilities/Combat/Ability_Aim.h"
 
 // BlasterShooter
+#include "Camera/Modifiers/CameraModifier_Aim.h"
 #include "General/Components/CombatComponent.h"
 
 #pragma region OVERRIDES
@@ -23,14 +24,14 @@ void UAbility_Aim::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	if (UCombatComponent* CombatComponent = Cast<UCombatComponent>(ActorInfo->AvatarActor.Get()->FindComponentByClass(UCombatComponent::StaticClass())))
-	{
-		CombatComponent->SetIsAiming(true);
-	}
+	UCombatComponent* CombatComponent = CastChecked<UCombatComponent>(ActorInfo->AvatarActor.Get()->FindComponentByClass(UCombatComponent::StaticClass()));
+	CombatComponent->SetIsAiming(true);
 
 	if (APlayerCameraManager* PlayerCameraManager = ActorInfo->PlayerController->PlayerCameraManager)
 	{
-		AimCameraModifier = PlayerCameraManager->AddNewCameraModifier(AimCameraModifierClass);
+		AimCameraModifier = CastChecked<UCameraModifier_Aim>(PlayerCameraManager->AddNewCameraModifier(AimCameraModifierClass));
+		AimCameraModifier->SetAimFOV(CombatComponent->GetEquippedWeaponData().AimFOV);
+		AimCameraModifier->SetAimInterpSpeed(CombatComponent->GetEquippedWeaponData().AimInterpSpeed);
 	}
 	else
 	{

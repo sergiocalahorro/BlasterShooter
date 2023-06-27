@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 
 // BlasterShooter
+#include "CrosshairData.h"
 #include "General/Enums/Weapon/WeaponType.h"
 
 #include "WeaponData.generated.h"
@@ -14,7 +15,6 @@
 class UNiagaraSystem;
 class UGameplayAbility;
 class UGameplayEffect;
-class UTexture2D;
 
 // Forward declarations - BlasterShooter
 class ABaseProjectile;
@@ -102,24 +102,16 @@ public:
 	/** Muzzle flash's socket name (used for spawning the projectile at this socket's location) */
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "WeaponType == EWeaponType::Projectile", EditConditionHides))
 	FName MuzzleFlashSocketName = FName("MuzzleFlash");
-
-	/** Texture for center crosshairs */
+	
+	/** FOV for zoom while aiming */
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> CrosshairsCenter;
+	float AimFOV = 30.f;
 
-	/** Texture for left crosshairs */
+	/** Interp speed to zoom while aiming */
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> CrosshairsLeft;
+	float AimInterpSpeed = 20.f;
 
-	/** Texture for right crosshairs */
+	/** Crosshair data */
 	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> CrosshairsRight;
-
-	/** Texture for top crosshairs */
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> CrosshairsTop;
-
-	/** Texture for bottom crosshairs */
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UTexture2D> CrosshairsBottom;
+	FCrosshairData CrosshairData;
 };

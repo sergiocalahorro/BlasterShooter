@@ -130,6 +130,18 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	ETurningInPlace TurningInPlace;
 
+	/** Right hand's rotation */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	FRotator RightHandRotation;
+
+	/** Right hand's rotation */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	float RightHandRotationInterpSpeed = 30.f;
+
+	/** Right hand's rotation */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	bool bLocallyControlled;
+
 #pragma endregion CHARACTER
 	
 };

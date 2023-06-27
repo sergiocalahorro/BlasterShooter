@@ -25,11 +25,24 @@ protected:
 
 #pragma region AIM
 
-protected:
+public:
 
-	/** Distance to move the view location to */
-	UPROPERTY(EditDefaultsOnly, Category = "AA|Aim", meta = (ClampMin = 0.f, UIMIn = 0.f))
-	float AimDistance = 150.f;
+	/** Setter of AimFOV */
+	void SetAimFOV(float InAimFOV) { AimFOV = InAimFOV; }
+
+	/** Setter of AimInterpSpeed */
+	void SetAimInterpSpeed(float InAimInterpSpeed) { AimInterpSpeed = InAimInterpSpeed; }
+
+private:
+
+	/** FOV for zoom while aiming */
+	float CurrentAimFOV = 90.f;
+
+	/** FOV for zoom while aiming */
+	float AimFOV;
+
+	/** Interp speed to zoom while aiming */
+	float AimInterpSpeed;
 
 #pragma endregion AIM
 	

@@ -7,6 +7,7 @@
 #include "Components/ActorComponent.h"
 
 // BlasterShooter
+#include "General/Structs/Data/WeaponData.h"
 #include "General/Structs/HUD/HUDPackage.h"
 
 #include "CombatComponent.generated.h"
@@ -18,6 +19,9 @@ class ABlasterCharacter;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponEquippedSignature, bool, bShouldAffectMovement);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWeaponUnequippedSignature, bool, bShouldAffectMovement);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FWeaponStartedFireSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FWeaponStoppedFireSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCrosshairsTraceHitSignature, bool, bReactToCrosshair);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCrosshairsUpdateSignature, const FHUDPackage&, HUDPackage);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -63,6 +67,10 @@ public:
 	UFUNCTION()
 	UDataAsset_WeaponData* GetEquippedWeaponDataAsset() const;
 
+	/** Get EquippedWeapon's data */
+	UFUNCTION()
+	FWeaponData GetEquippedWeaponData() const;
+
 	/** Equip weapon */
 	UFUNCTION()
 	void EquipWeapon(ABaseWeapon* Weapon);
@@ -100,11 +108,11 @@ private:
 
 	/** Server RPC for firing weapon */
 	UFUNCTION(Server, Reliable)
-	void ServerFireWeapon(const FVector_NetQuantize& HitTarget);
+	void ServerFireWeapon(const FVector_NetQuantize& NewHitTarget);
 	
 	/** Multicast RPC for firing weapon */
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastFireWeapon(const FVector_NetQuantize& HitTarget);
+	void MulticastFireWeapon(const FVector_NetQuantize& NewHitTarget);
 
 public:
 
@@ -113,6 +121,12 @@ public:
 
 	/** Delegate called when weapon is unequipped */
 	FWeaponUnequippedSignature WeaponUnequippedDelegate;
+
+	/** Delegate called when weapon started firing */
+	FWeaponStartedFireSignature WeaponStartedFireDelegate;
+
+	/** Delegate called when weapon stopped firing */
+	FWeaponStoppedFireSignature WeaponStoppedFireDelegate;
 	
 protected:
 
@@ -133,6 +147,10 @@ private:
 	/** Whether owner of this component is aiming */
 	UPROPERTY(Replicated)
 	bool bIsAiming;
+
+	/** Distance offset used for trace under crosshairs */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Equipment", meta = (ClampMin = 0.f, UIMin = 0.f))
+	float TraceOffset = 100.f;
 	
 #pragma endregion EQUIPMENT
 
@@ -148,28 +166,24 @@ public:
 	/** Delegate called when crosshairs are updated */
 	FCrosshairsUpdateSignature CrosshairsUpdateDelegate;
 
+	/** Delegate called when trace hits an Actor that reacts to crosshairs */
+	FCrosshairsTraceHitSignature CrosshairsTraceHitDelegate;
+
+	/** Hit target (location it's aiming at) */
+	FVector HitTarget;
+
 private:
 
-	/** Crosshair's min spread in air factor */
-	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
-	float CrosshairMinSpreadInAirFactor = 0.f;
+	/** Crosshair's spread factor when in air */
+	float CrosshairInAirFactor;
 
-	/** Crosshair's max spread in air factor */
-	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
-	float CrosshairMaxSpreadInAirFactor = 2.25f;
+	/** Crosshair's spread factor when aiming */
+	float CrosshairAimFactor;
 
-	/** Crosshair's spread in air min interp speed */
-	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
-	float CrosshairSpreadInAirMinSpeed = 2.25f;
-	
-	/** Crosshair's spread in air max interp speed */
-	UPROPERTY(EditDefaultsOnly, Category = "AA|HUD", meta = (ClampMin = 0.f, UIMin = 0.f))
-	float CrosshairSpreadInAirMaxSpeed = 30.f;
-	
-	/** Crosshair's current spread in air factor */
-	float CrosshairSpreadInAirFactor;
+	/** Crosshair's spread factor when firing */
+	float CrosshairFireFactor;
 
 #pragma endregion HUD
 	
-};
+}; 
  

@@ -10,8 +10,8 @@
 
 #include "Ability_Aim.generated.h"
 
-// Forward declarations - Unreal Engine
-class UCameraModifier;
+// Forward declarations - BlasterShooter
+class UCameraModifier_Aim;
 
 /**
  * 
@@ -48,7 +48,7 @@ private:
 
 	/** Aim camera modifier's reference */
 	UPROPERTY()
-	TObjectPtr<UCameraModifier> AimCameraModifier;
+	TObjectPtr<UCameraModifier_Aim> AimCameraModifier;
 
 #pragma endregion AIM
 	

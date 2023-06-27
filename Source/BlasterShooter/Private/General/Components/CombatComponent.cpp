@@ -39,6 +39,13 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	UpdateHUDCrossHairs(DeltaTime);
+
+	if (BlasterCharacter && BlasterCharacter->IsLocallyControlled())
+	{
+		FHitResult HitResult;
+		TraceUnderCrosshair(HitResult);
+		HitTarget = HitResult.ImpactPoint;
+	}
 }
 
 /** Returns properties that are replicated for the lifetime of the actor channel */
@@ -91,26 +98,29 @@ void UCombatComponent::OnRep_EquippedWeapon()
 /** Fire weapon */
 void UCombatComponent::FireWeapon()
 {
+	WeaponStartedFireDelegate.Broadcast();
+
 	FHitResult TraceHitResult;
 	TraceUnderCrosshair(TraceHitResult);
 	ServerFireWeapon(TraceHitResult.ImpactPoint);
 }
 
 /** Server RPC for firing weapon */
-void UCombatComponent::ServerFireWeapon_Implementation(const FVector_NetQuantize& HitTarget)
+void UCombatComponent::ServerFireWeapon_Implementation(const FVector_NetQuantize& NewHitTarget)
 {
-	MulticastFireWeapon(HitTarget);
+	MulticastFireWeapon(NewHitTarget);
 }
 	
 /** Multicast RPC for firing weapon */
-void UCombatComponent::MulticastFireWeapon_Implementation(const FVector_NetQuantize& HitTarget)
+void UCombatComponent::MulticastFireWeapon_Implementation(const FVector_NetQuantize& NewHitTarget)
 {
 	if (!EquippedWeapon)
 	{
 		return;
 	}
-	
-	EquippedWeapon->Fire(HitTarget);
+
+	CrosshairFireFactor = EquippedWeapon->GetWeaponData().CrosshairData.SpreadFireFactor;
+	EquippedWeapon->Fire(NewHitTarget);
 }
 
 /** Set whether this component's owner is aiming */
@@ -132,9 +142,20 @@ UDataAsset_WeaponData* UCombatComponent::GetEquippedWeaponDataAsset() const
 	return EquippedWeapon->GetWeaponDataAsset();
 }
 
+/** Get EquippedWeapon's data */
+FWeaponData UCombatComponent::GetEquippedWeaponData() const
+{
+	return EquippedWeapon->GetWeaponData();
+}
+
 /** Perform trace under crosshair (from center of the screen) */
 void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 {
+	if (!EquippedWeapon)
+	{
+		return;
+	}
+	
 	FVector2D ViewportSize;
 	if (GEngine && GEngine->GameViewport)
 	{
@@ -161,7 +182,12 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 	if (const UDataAsset_WeaponData* WeaponDataAsset = EquippedWeapon->GetWeaponDataAsset())
 	{
 		const FWeaponData WeaponData = WeaponDataAsset->WeaponData;
-		const FVector TraceStart = CrosshairWorldLocation;
+		FVector TraceStart = CrosshairWorldLocation;
+		if (BlasterCharacter)
+		{
+			const float DistanceToCharacter = (BlasterCharacter->GetActorLocation() - TraceStart).Size();
+			TraceStart += CrosshairWorldDirection * (DistanceToCharacter + TraceOffset);
+		}
 		const FVector TraceEnd = TraceStart + CrosshairWorldDirection * WeaponData.ShootingDistance;
 		
 		FCollisionQueryParams QueryParams;
@@ -175,6 +201,9 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 			QueryParams
 		);
 
+		const bool bReactToCrosshair = TraceHitResult.GetActor() && Cast<IReactToCrosshair>(TraceHitResult.GetActor());
+		CrosshairsTraceHitDelegate.Broadcast(bReactToCrosshair);
+
 		if (!TraceHitResult.bBlockingHit)
 		{
 			TraceHitResult.ImpactPoint = TraceEnd;
@@ -186,33 +215,53 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 void UCombatComponent::UpdateHUDCrossHairs(float DeltaTime)
 {
 	FHUDPackage HUDPackage;
+	
 	if (EquippedWeapon)
 	{
-		HUDPackage.CrosshairsCenter = EquippedWeapon->GetWeaponData().CrosshairsCenter;
-		HUDPackage.CrosshairsLeft = EquippedWeapon->GetWeaponData().CrosshairsLeft;
-		HUDPackage.CrosshairsRight = EquippedWeapon->GetWeaponData().CrosshairsRight;
-		HUDPackage.CrosshairsTop = EquippedWeapon->GetWeaponData().CrosshairsTop;
-		HUDPackage.CrosshairsBottom = EquippedWeapon->GetWeaponData().CrosshairsBottom;
-	}
+		const FWeaponData WeaponData = EquippedWeapon->GetWeaponData();
+		HUDPackage.CrosshairsCenter = WeaponData.CrosshairData.CrosshairsCenter;
+		HUDPackage.CrosshairsLeft = WeaponData.CrosshairData.CrosshairsLeft;
+		HUDPackage.CrosshairsRight = WeaponData.CrosshairData.CrosshairsRight;
+		HUDPackage.CrosshairsTop = WeaponData.CrosshairData.CrosshairsTop;
+		HUDPackage.CrosshairsBottom = WeaponData.CrosshairData.CrosshairsBottom;
 
-	// Calculate crosshair spread
-	if (BlasterCharacter)
-	{
-		const FVector2D WalkSpeedRange(0.f, BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed);
-		const FVector2D VelocityMultiplierRange(0.f, 1.f);
-		const FVector Velocity = BlasterCharacter->GetVelocity();
-		const float SpreadVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size2D());
-
-		if (BlasterCharacter->GetCharacterMovement()->IsFalling())
+		// Calculate crosshair spread
+		if (BlasterCharacter)
 		{
-			CrosshairSpreadInAirFactor = FMath::FInterpTo(CrosshairSpreadInAirFactor, CrosshairMaxSpreadInAirFactor, DeltaTime, CrosshairSpreadInAirMinSpeed);
-		}
-		else
-		{
-			CrosshairSpreadInAirFactor = FMath::FInterpTo(CrosshairSpreadInAirFactor, CrosshairMinSpreadInAirFactor, DeltaTime, CrosshairSpreadInAirMaxSpeed);
-		}
+			const FVector2D WalkSpeedRange(0.f, BlasterCharacter->GetCharacterMovement()->MaxWalkSpeed);
+			const FVector2D VelocityMultiplierRange(0.f, 1.f);
+			const FVector Velocity = BlasterCharacter->GetVelocity();
+			const float CrosshairSpreadVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size2D());
 
-		HUDPackage.CrosshairSpread = SpreadVelocityFactor + CrosshairSpreadInAirFactor;
+			// In air factor
+			if (BlasterCharacter->GetCharacterMovement()->IsFalling())
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, WeaponData.CrosshairData.MaxSpreadInAirFactor, DeltaTime, WeaponData.CrosshairData.SpreadInAirMinInterpSpeed);
+			}
+			else
+			{
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, WeaponData.CrosshairData.MinSpreadInAirFactor, DeltaTime, WeaponData.CrosshairData.SpreadInAirMaxInterpSpeed);
+			}
+
+			// Aim factor
+			if (bIsAiming)
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, WeaponData.CrosshairData.MaxSpreadAimFactor, DeltaTime, WeaponData.CrosshairData.SpreadAimMinInterpSpeed);
+			}
+			else
+			{
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, WeaponData.CrosshairData.MinSpreadAimFactor, DeltaTime, WeaponData.CrosshairData.SpreadAimMaxInterpSpeed);
+			}
+
+			// Firing factor
+			CrosshairFireFactor = FMath::FInterpTo(CrosshairFireFactor, WeaponData.CrosshairData.MinSpreadFireFactor, DeltaTime, WeaponData.CrosshairData.SpreadFireMinInterpSpeed);
+
+			HUDPackage.CrosshairSpread = WeaponData.CrosshairData.BaseSpread +
+										 CrosshairSpreadVelocityFactor +
+										 CrosshairInAirFactor -
+										 CrosshairAimFactor +
+										 CrosshairFireFactor;
+		}
 	}
 	
 	CrosshairsUpdateDelegate.Broadcast(HUDPackage);

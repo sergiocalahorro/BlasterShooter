@@ -7,10 +7,8 @@
 /** Directly modifies variables in the owning camera */
 bool UCameraModifier_Aim::ModifyCamera(float DeltaTime, struct FMinimalViewInfo& InOutPOV)
 {
-	const FVector InitialViewLocation = InOutPOV.Location;
-	const FVector FinalViewLocation = InitialViewLocation + InOutPOV.Rotation.Vector() * AimDistance;
-	InOutPOV.Location = FinalViewLocation;
-
+	CurrentAimFOV = FMath::FInterpTo(CurrentAimFOV, AimFOV, DeltaTime, AimInterpSpeed);
+	InOutPOV.FOV = CurrentAimFOV;
 	return true;
 }
 

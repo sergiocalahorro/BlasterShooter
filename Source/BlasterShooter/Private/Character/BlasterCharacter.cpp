@@ -59,6 +59,7 @@ ABlasterCharacter::ABlasterCharacter()
 	// Configure collisions
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	
 	// GAS setup
 	AbilitySystemComponent = CreateDefaultSubobject<UBlasterAbilitySystemComponent>(TEXT("AbilitySystem"));
@@ -117,6 +118,7 @@ void ABlasterCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	AimOffset(DeltaSeconds);
+	HandleCharacterCloseToCamera();
 }
 
 /** Called when this Pawn is possessed (only called on the server) */
@@ -356,7 +358,23 @@ void ABlasterCharacter::SetCharacterData(const FCharacterData& InCharacterData)
 void ABlasterCharacter::InitializeCharacter()
 {
 	OverheadWidgetRef = CastChecked<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
-	// OverheadWidgetRef->ShowPlayerNetRole(this);
+}
+
+/** Handle character's visibility when too close to camera */
+void ABlasterCharacter::HandleCharacterCloseToCamera() const
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	// Hide character if its closer than set camera's threshold
+	const bool bShouldHideCharacter = (FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold;
+	GetMesh()->SetVisibility(!bShouldHideCharacter);
+	if (const ABaseWeapon* EquippedWeapon = GetEquippedWeapon())
+	{
+		EquippedWeapon->GetWeaponSkeletalMesh()->SetOwnerNoSee(bShouldHideCharacter);
+	}
 }
 
 #pragma endregion CORE
@@ -428,6 +446,12 @@ bool ABlasterCharacter::IsWeaponEquipped() const
 ABaseWeapon* ABlasterCharacter::GetEquippedWeapon() const
 {
 	return CombatComponent->GetEquippedWeapon();
+}
+
+/** Get hit target */
+FVector ABlasterCharacter::GetHitTarget() const
+{
+	return CombatComponent->HitTarget;
 }
 
 /** Returns whether character is aiming */

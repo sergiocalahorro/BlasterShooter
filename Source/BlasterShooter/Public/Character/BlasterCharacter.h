@@ -11,8 +11,10 @@
 #include "GameplayEffectTypes.h"
 
 // BlasterShooter
+#include "General/Components/CombatComponent.h"
 #include "General/Enums/Animation/TurningInPlace.h"
 #include "General/Structs/Data/CharacterData.h"
+#include "General/Interfaces/ReactToCrosshair.h"
 
 #include "BlasterCharacter.generated.h"
 
@@ -33,7 +35,7 @@ class UCombatComponent;
 class ABaseWeapon;
 
 UCLASS()
-class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface
+class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface, public IReactToCrosshair
 {
 	GENERATED_BODY()
 
@@ -224,6 +226,9 @@ private:
 	UFUNCTION()
 	void InitializeCharacter();
 
+	/** Handle character's visibility when too close to camera */
+	void HandleCharacterCloseToCamera() const;
+
 protected:
 
 	/** Data asset that holds character's data */
@@ -239,6 +244,10 @@ private:
 	/** Character's turning in place state */
 	UPROPERTY()
 	ETurningInPlace TurningInPlace;
+
+	/** Camera threshold to show/hide character */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Core")
+	float CameraThreshold = 200.f;
 
 #pragma endregion CORE
 
@@ -257,6 +266,10 @@ public:
 	/** Returns character's currently equipped weapon */
 	UFUNCTION()
 	ABaseWeapon* GetEquippedWeapon() const;
+	
+	/** Get hit target */
+	UFUNCTION()
+	FVector GetHitTarget() const;
 
 	/** Returns whether character is aiming */
 	UFUNCTION()

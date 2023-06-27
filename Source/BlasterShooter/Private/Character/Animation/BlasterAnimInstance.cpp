@@ -119,6 +119,15 @@ void UBlasterAnimInstance::UpdateWeapon(float DeltaSeconds)
 		BlasterCharacter->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
+
+		// Calculate the rotation for the hand holding the weapon, so the weapon is aimed correctly
+		if (BlasterCharacter->IsLocallyControlled())
+		{
+			bLocallyControlled = true;
+			const FTransform RightHandTransform = EquippedWeapon->GetWeaponSkeletalMesh()->GetSocketTransform(FName("hand_r", RTS_World));
+			const FRotator LookAtRotation = UKismetMathLibrary::FindLookAtRotation(RightHandTransform.GetLocation(), RightHandTransform.GetLocation() + (RightHandTransform.GetLocation() - BlasterCharacter->GetHitTarget()));
+			RightHandRotation = FMath::RInterpTo(RightHandRotation, LookAtRotation, DeltaSeconds, RightHandRotationInterpSpeed);
+		}
 	}
 }
 

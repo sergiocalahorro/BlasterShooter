@@ -47,6 +47,12 @@ void UAbility_Fire::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 	{
 		PlayMontageTask->EndTask();
 	}
+
+	const ABlasterCharacter* BlasterCharacter = CastChecked<ABlasterCharacter>(GetAvatarActorFromActorInfo());
+	if (const UCombatComponent* CombatComponent = BlasterCharacter->GetCombatComponent())
+	{
+		CombatComponent->WeaponStoppedFireDelegate.Broadcast();
+	}
 	
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
