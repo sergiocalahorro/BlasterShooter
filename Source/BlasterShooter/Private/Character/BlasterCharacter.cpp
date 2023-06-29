@@ -16,6 +16,7 @@
 #include "Kismet/KismetMathLibrary.h"
 
 // BlasterShooter
+#include "BlasterShooter.h"
 #include "General/DataAssets/DataAsset_CharacterData.h"
 #include "GAS/AbilitySystem/BlasterAbilitySystemComponent.h"
 #include "GAS/Attributes/BlasterAttributeSet.h"
@@ -58,6 +59,7 @@ ABlasterCharacter::ABlasterCharacter()
 
 	// Configure collisions
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	
@@ -117,7 +119,20 @@ void ABlasterCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	AimOffset(DeltaSeconds);
+	if (GetLocalRole() > ROLE_SimulatedProxy && IsLocallyControlled())
+	{
+		AimOffset(DeltaSeconds);
+	}
+	else
+	{
+		TimeSinceLastMovementReplication += DeltaSeconds; 
+		if (TimeSinceLastMovementReplication > 0.25f)
+		{
+			OnRep_ReplicatedMovement();
+		}
+		CalculateAimOffsetPitch();
+	}
+	
 	HandleCharacterCloseToCamera();
 }
 
@@ -178,6 +193,15 @@ void ABlasterCharacter::Jump()
 	}
 
 	Super::Jump();
+}
+
+/** Called on client when updated bReplicateMovement value is received for this actor */
+void ABlasterCharacter::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+	
+	SimulatedProxiesTurn();
+	TimeSinceLastMovementReplication = 0.f;
 }
 
 #pragma endregion OVERRIDES
@@ -472,6 +496,12 @@ float ABlasterCharacter::GetAimOffsetPitch() const
 	return AimOffsetPitch;
 }
 
+/** Getter of bRotateRootBone */
+bool ABlasterCharacter::ShouldRotateRootBone() const
+{
+	return bShouldRotateRootBone;
+}
+
 /** Calculate AimOffset's Yaw and Pitch */
 void ABlasterCharacter::AimOffset(float DeltaSeconds)
 {
@@ -486,6 +516,7 @@ void ABlasterCharacter::AimOffset(float DeltaSeconds)
 	if (Speed > 0.f || bIsInAir)
 	{
 		// Character's moving -> reset aim offset
+		bShouldRotateRootBone = false;
 		InitialAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		AimOffsetYaw = 0.f;
 		bUseControllerRotationYaw = true;
@@ -494,6 +525,7 @@ void ABlasterCharacter::AimOffset(float DeltaSeconds)
 	else
 	{
 		// Character's standing still -> calculate delta aim rotation yaw
+		bShouldRotateRootBone = true;
 		const FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 		const FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(CurrentAimRotation, InitialAimRotation);
 		AimOffsetYaw = DeltaAimRotation.Yaw;
@@ -505,6 +537,55 @@ void ABlasterCharacter::AimOffset(float DeltaSeconds)
 		TurnInPlace(DeltaSeconds);
 	}
 
+	CalculateAimOffsetPitch();
+}
+
+/** Turn for Simulated Proxies */
+void ABlasterCharacter::SimulatedProxiesTurn()
+{
+	if (!IsWeaponEquipped())
+	{
+		return;
+	}
+	
+	bShouldRotateRootBone = false;
+	const float Speed = GetVelocity().Size2D();
+	if (Speed > 0.f)
+	{
+		TurningInPlace = ETurningInPlace::NotTurning;
+		return;
+	}
+
+	LastProxyRotation = CurrentProxyRotation;
+	CurrentProxyRotation = GetActorRotation();
+	CurrentProxyRotationYaw = UKismetMathLibrary::NormalizedDeltaRotator(CurrentProxyRotation, LastProxyRotation).Yaw;
+	UE_LOG(LogTemp, Warning, TEXT("ABlasterCharacter::SimulatedProxiesTurn - CurrentProxyRotationYaw = %f"), CurrentProxyRotationYaw);
+
+	// Set turn in place's state
+	if (FMath::Abs(CurrentProxyRotationYaw) > TurnThreshold)
+	{
+		if (CurrentProxyRotationYaw > TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::Right;
+		}
+		else if (CurrentProxyRotationYaw < -TurnThreshold)
+		{
+			TurningInPlace = ETurningInPlace::Left;
+		}
+		else
+		{
+			TurningInPlace = ETurningInPlace::NotTurning;
+		}
+
+		return;
+	}
+
+	TurningInPlace = ETurningInPlace::NotTurning;
+}
+
+/** Calculate Aim offset's pitch */
+void ABlasterCharacter::CalculateAimOffsetPitch()
+{
 	AimOffsetPitch = GetBaseAimRotation().Pitch;
 
 	// Map pitch from [270, 360) to [-90, 0)
@@ -543,6 +624,32 @@ void ABlasterCharacter::TurnInPlace(float DeltaSeconds)
 }
 
 #pragma endregion WEAPON
+
+#pragma region DAMAGE
+
+/** Functionality performed when a shot is received */
+void ABlasterCharacter::OnShotReceived()
+{
+	MultiCastOnShotReceived();
+}
+
+/** Multicast RPC called when a shot is received */
+void ABlasterCharacter::MultiCastOnShotReceived_Implementation()
+{
+	if (!IsWeaponEquipped())
+	{
+		return;
+	}
+	
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+		FName SectionName("FromFront");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+#pragma endregion DAMAGE
 
 #pragma region GAS
 

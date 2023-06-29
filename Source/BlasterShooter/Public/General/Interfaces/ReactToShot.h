@@ -6,11 +6,11 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 
-#include "ReactToCrosshair.generated.h"
+#include "ReactToShot.generated.h"
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI, Blueprintable)
-class UReactToCrosshair : public UInterface
+class UReactToShot : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -18,7 +18,13 @@ class UReactToCrosshair : public UInterface
 /**
  * 
  */
-class BLASTERSHOOTER_API IReactToCrosshair
+class BLASTERSHOOTER_API IReactToShot
 {
 	GENERATED_BODY()
+
+public:
+
+	/** Functionality performed when a shot is received */
+	UFUNCTION()
+	virtual void OnShotReceived() PURE_VIRTUAL(IReactToShot::OnShotReceived);
 };

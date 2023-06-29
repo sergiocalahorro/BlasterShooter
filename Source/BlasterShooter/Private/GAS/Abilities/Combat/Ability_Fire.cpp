@@ -19,25 +19,17 @@ void UAbility_Fire::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	const ABlasterCharacter* BlasterCharacter = CastChecked<ABlasterCharacter>(GetAvatarActorFromActorInfo());
-	UCombatComponent* CombatComponent = BlasterCharacter->GetCombatComponent();
+	CombatComponent = BlasterCharacter->GetCombatComponent();
 	if (!CombatComponent)
 	{
 		return;
 	}
-	
-	CombatComponent->FireWeapon();
-	
-	const FWeaponData WeaponData = CombatComponent->GetEquippedWeaponDataAsset()->WeaponData;
-	if (UAnimMontage* AttackMontage = WeaponData.AttackMontage)
-	{
-		const FName MontageSection = BlasterCharacter->IsAiming() ? WeaponData.AttackMontageAimSectionName : WeaponData.AttackMontageHipSectionName;
 
-		PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage, 1.f, MontageSection);
-		PlayMontageTask->OnCompleted.AddUniqueDynamic(this, &UAbility_Fire::K2_EndAbility);
-		PlayMontageTask->OnCancelled.AddUniqueDynamic(this, &UAbility_Fire::K2_EndAbility);
-		PlayMontageTask->OnInterrupted.AddUniqueDynamic(this, &UAbility_Fire::K2_EndAbility);
-		PlayMontageTask->ReadyForActivation();
-	}
+	const FWeaponData WeaponData = CombatComponent->GetEquippedWeaponData();
+
+	FTimerDelegate FireTimerDelegate;
+	FireTimerDelegate.BindUFunction(this, FName("StartFiring"));
+	GetWorld()->GetTimerManager().SetTimer(FireTimerHandle, FireTimerDelegate, 1.f / WeaponData.FireRate, true, 0.f);
 }
 	
 /** Native function, called if an ability ends normally or abnormally. If bReplicate is set to true, try to replicate the ending to the client/server */
@@ -48,8 +40,9 @@ void UAbility_Fire::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 		PlayMontageTask->EndTask();
 	}
 
-	const ABlasterCharacter* BlasterCharacter = CastChecked<ABlasterCharacter>(GetAvatarActorFromActorInfo());
-	if (const UCombatComponent* CombatComponent = BlasterCharacter->GetCombatComponent())
+	GetWorld()->GetTimerManager().ClearTimer(FireTimerHandle);
+
+	if (CombatComponent)
 	{
 		CombatComponent->WeaponStoppedFireDelegate.Broadcast();
 	}
@@ -58,3 +51,36 @@ void UAbility_Fire::EndAbility(const FGameplayAbilitySpecHandle Handle, const FG
 }
 
 #pragma endregion OVERRIDES
+
+#pragma region ABILITY
+
+/** Start firing weapon */
+void UAbility_Fire::StartFiring()
+{
+	if (!CombatComponent)
+	{
+		return;
+	}
+	
+	CombatComponent->FireWeapon();
+	const FWeaponData WeaponData = CombatComponent->GetEquippedWeaponData();
+	if (UAnimMontage* AttackMontage = WeaponData.AttackMontage)
+	{
+		const FName MontageSection = CombatComponent->IsAiming() ? WeaponData.AttackMontageAimSectionName : WeaponData.AttackMontageHipSectionName;
+
+		PlayMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage, 1.f, MontageSection);
+		PlayMontageTask->OnCompleted.AddUniqueDynamic(this, &UAbility_Fire::K2_EndAbility);
+		PlayMontageTask->OnBlendOut.AddDynamic(this, &UAbility_Fire::K2_EndAbility);
+		PlayMontageTask->OnCancelled.AddUniqueDynamic(this, &UAbility_Fire::K2_EndAbility);
+		PlayMontageTask->OnInterrupted.AddUniqueDynamic(this, &UAbility_Fire::K2_EndAbility);
+		PlayMontageTask->ReadyForActivation();
+	}
+}
+
+/** Stop firing weapon */
+void UAbility_Fire::StopFiring()
+{
+	
+}
+
+#pragma endregion ABILITY

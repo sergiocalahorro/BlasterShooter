@@ -138,9 +138,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	float RightHandRotationInterpSpeed = 30.f;
 
-	/** Right hand's rotation */
+	/** Whether character using this AnimInstance is locally controlled */
 	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
 	bool bLocallyControlled;
+
+	/** Whether Root bone should rotate */
+	UPROPERTY(BlueprintReadOnly, Category = "AA|Character", meta = (AllowPrivateAccess = true))
+	bool bShouldRotateRootBone;
 
 #pragma endregion CHARACTER
 	

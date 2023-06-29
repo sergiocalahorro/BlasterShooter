@@ -13,6 +13,9 @@
 // Forward declarations - Unreal Engine
 class UAbilityTask_PlayMontageAndWait;
 
+// Forward declarations - BlasterShooter
+class UCombatComponent;
+
 /**
  * 
  */
@@ -37,9 +40,27 @@ protected:
 
 private:
 
+	/** Start firing weapon */
+	UFUNCTION()
+	void StartFiring();
+
+	/** Stop firing weapon */
+	UFUNCTION()
+	void StopFiring();
+
+private:
+
+	/** Avatar Actor's CombatComponent */
+	UPROPERTY()
+	TObjectPtr<UCombatComponent> CombatComponent;
+
 	/** Play montage's ability task */
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_PlayMontageAndWait> PlayMontageTask;
+
+	/** Timer handle for firing */
+	UPROPERTY()
+	FTimerHandle FireTimerHandle;
 
 #pragma endregion ABILITY
 	

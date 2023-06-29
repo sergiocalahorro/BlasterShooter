@@ -64,7 +64,7 @@ public:
 
 	/** Gravity scale */
 	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.f, ClampMin = 0.f))
-	float GravityScale = 1.f;
+	float GravityScale = 0.f;
 
 	/** Whether initial velocity is set in local space */
 	UPROPERTY(EditDefaultsOnly)

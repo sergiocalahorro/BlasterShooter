@@ -84,7 +84,7 @@ public:
 	TSubclassOf<UGameplayEffect> DamageEffect;
 
 	/** Fire rate (amount of shots performed in 1s) */
-	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 1.f, ClampMin = 1.f))
+	UPROPERTY(EditDefaultsOnly, meta = (UIMin = 0.01f, ClampMin = 0.01f))
 	float FireRate = 1.f;
 	
 	/** Weapon trace channel to apply damage */

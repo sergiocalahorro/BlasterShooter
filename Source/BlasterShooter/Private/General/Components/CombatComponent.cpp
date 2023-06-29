@@ -201,7 +201,7 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 			QueryParams
 		);
 
-		const bool bReactToCrosshair = TraceHitResult.GetActor() && Cast<IReactToCrosshair>(TraceHitResult.GetActor());
+		const bool bReactToCrosshair = TraceHitResult.GetActor() && Cast<IReactToShot>(TraceHitResult.GetActor());
 		CrosshairsTraceHitDelegate.Broadcast(bReactToCrosshair);
 
 		if (!TraceHitResult.bBlockingHit)

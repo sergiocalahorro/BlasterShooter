@@ -14,7 +14,7 @@
 #include "General/Components/CombatComponent.h"
 #include "General/Enums/Animation/TurningInPlace.h"
 #include "General/Structs/Data/CharacterData.h"
-#include "General/Interfaces/ReactToCrosshair.h"
+#include "General/Interfaces/ReactToShot.h"
 
 #include "BlasterCharacter.generated.h"
 
@@ -35,7 +35,7 @@ class UCombatComponent;
 class ABaseWeapon;
 
 UCLASS()
-class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface, public IReactToCrosshair
+class BLASTERSHOOTER_API ABlasterCharacter : public ACharacter, public IAbilitySystemInterface, public IReactToShot
 {
 	GENERATED_BODY()
 
@@ -60,6 +60,9 @@ public:
 	
 	/** Make the character jump on the next update */
 	virtual void Jump() override;
+
+	/** Called on client when updated bReplicateMovement value is received for this actor */
+	virtual void OnRep_ReplicatedMovement() override;
 
 protected:
 
@@ -283,16 +286,22 @@ public:
 	UFUNCTION()
 	float GetAimOffsetPitch() const;
 
-protected:
-
-	/** Calculate AimOffset's Yaw and Pitch */
+	/** Getter of bRotateRootBone */
 	UFUNCTION()
-	void AimOffset(float DeltaSeconds);
+	bool ShouldRotateRootBone() const;
 
 private:
 
+	/** Calculate AimOffset's Yaw and Pitch */
+	void AimOffset(float DeltaSeconds);
+
+	/** Turn for Simulated Proxies */
+	void SimulatedProxiesTurn();
+
+	/** Calculate Aim offset's pitch */
+	void CalculateAimOffsetPitch();
+
 	/** Turn in place */
-	UFUNCTION()
 	void TurnInPlace(float DeltaSeconds);
 
 	/** RepNotify for OverlappingWeapon */
@@ -333,7 +342,47 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "AA|Weapon|TurnInPlace")
 	float ResetTurningAngleThreshold = 15.f;
 
+	/** Whether Root bone should rotate */
+	bool bShouldRotateRootBone;
+
+	/** Threshold for performing turn in place on Simulated Proxies */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Weapon|TurnInPlace")
+	float TurnThreshold = 0.5f;
+
+	/** Proxy rotation last frame */
+	FRotator LastProxyRotation;
+
+	/** Current proxy rotation */
+	FRotator CurrentProxyRotation;
+
+	/** Current proxy rotation's yaw */
+	float CurrentProxyRotationYaw;
+
+	/** Time since last movement replication, used for turning on Simulated Proxies */
+	float TimeSinceLastMovementReplication;
+
 #pragma endregion WEAPON
+
+#pragma region DAMAGE
+
+public:
+	
+	/** Functionality performed when a shot is received */
+	virtual void OnShotReceived() override;
+
+private:
+
+	/** Multicast RPC called when a shot is received */
+	UFUNCTION(NetMulticast, Unreliable)
+	void MultiCastOnShotReceived();
+
+protected:
+
+	/** Hit react's montage */
+	UPROPERTY(EditDefaultsOnly, Category = "AA|Damage")
+	TObjectPtr<UAnimMontage> HitReactMontage;
+
+#pragma endregion DAMAGE
 
 #pragma region GAS
 

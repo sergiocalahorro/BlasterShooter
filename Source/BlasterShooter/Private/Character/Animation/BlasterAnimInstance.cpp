@@ -63,6 +63,9 @@ void UBlasterAnimInstance::SetBoolVariables(float DeltaSeconds)
 
 	// Set whether character is aiming
 	bIsAiming = BlasterCharacter->IsAiming();
+
+	// Set whether Root bone should rotate
+	bShouldRotateRootBone = BlasterCharacter->ShouldRotateRootBone();
 }
 
 /** Set float variables */
